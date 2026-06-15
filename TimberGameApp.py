@@ -48,12 +48,14 @@ if not summary_value.strip().startswith("$") and "Loading" not in summary_value:
     summary_value = f"${summary_value.strip()}"
 
 # ====================================================================
-# UNIFIED GRID LAYOUT WITH COMPACT HEADROOM ADJUSTMENTS
+# UNIFIED GRID LAYOUT WITH HEADROOM OFFSETS & SCALE ANIMATIONS
 # ====================================================================
 html_elements = """
 <style>
     body {
-        margin: 0; padding: 0; 
+        margin: 0; 
+        /* Added top padding to shift everything safely below the top iframe edge */
+        padding: 12px 0 0 0; 
         background-color: #0E1117;
         background-image: linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
                           linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
@@ -68,12 +70,12 @@ html_elements = """
         font-weight: 600;
         color: #FFFFFF;
         letter-spacing: -0.5px;
-        margin-top: 25px;
-        margin-bottom: -15px; /* Pulls the grid up closer to the text alignment */
+        margin-top: 15px;
+        margin-bottom: -5px; /* Moderated gap spacing to lift grid cleanly */
     }
     .casement-grid {
         display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px;
-        padding-top: 40px; /* Reduced from 130px to bridge the awkward empty gap */
+        padding-top: 45px; /* Sized layout header headroom to safeguard popup tooltips */
         padding-left: 15px; padding-right: 15px;
     }
     .grid-node {
@@ -84,17 +86,29 @@ html_elements = """
         width: 62px; height: 62px; display: flex;
         align-items: center; justify-content: center; margin-bottom: 8px;
     }
-    .image-frame img { width: 100%; height: 100%; object-fit: contain; }
+    
+    /* Animation Hooks for Active & Locked Nodes */
+    .image-frame img, .lock-node { 
+        width: 100%; height: 100%; object-fit: contain;
+        transition: transform 0.15s ease-in-out; /* Smooth transition framework */
+    }
     .lock-node {
         width: 52px; height: 52px; border-radius: 50%;
         border: 2px dashed #23273A; background: #161925;
         display: flex; align-items: center; justify-content: center;
         color: #3D4563; font-size: 13px;
     }
+    
+    /* Hover scale effect triggers a direct 15% structural magnification */
+    .grid-node:hover .image-frame img,
+    .grid-node:hover .lock-node {
+        transform: scale(1.15);
+    }
+    
     .quantity-badge { font-size: 12px; font-weight: 700; color: #F4D068; margin-bottom: 3px; min-height: 15px; }
     .label-badge { font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    /* Absolute Floating Tooltip Card Layout - Adjusted to handle lower ceiling spacing */
+    /* Absolute Floating Tooltip Card Layout */
     .node-tooltip {
         visibility: hidden; opacity: 0; position: absolute;
         bottom: 110px; left: 50%; transform: translateX(-50%);
@@ -186,5 +200,5 @@ html_elements += f"""
 </div>
 """
 
-# Tightened component height footprint since elements are now packed closer together
-st.components.v1.html(html_elements, height=290, scrolling=False)
+# Adjusted component ceiling properties to account for shifted down positions
+st.components.v1.html(html_elements, height=315, scrolling=False)
