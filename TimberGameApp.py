@@ -41,7 +41,7 @@ def load_fresh_medallion_meta():
                     "Probability": item.get("Probability", "0%"),
                     "Availability": str(item.get("Availability", "0")),
                     "Value": item.get("Value") or item.get("Asset Price", "$0"),
-                    "raw_object": item # Kept to make sheet row updates easy later
+                    "raw_object": item 
                 }
     return meta_map
 
@@ -146,8 +146,8 @@ st.markdown("""
     }
     
     .circle-placeholder-lock {
-        width: 90%; 
-        height: 90%;
+        width: 65px; 
+        height: 65px;
         border-radius: 50%;
         border: 2px dashed #212435;
         background: #11131C;
@@ -157,6 +157,7 @@ st.markdown("""
         color: #31364C;
         font-size: 1rem;
         box-sizing: border-box;
+        margin: 0 auto;
     }
     
     .tooltip-card {
@@ -404,7 +405,6 @@ if st.session_state.game_mode == "MemoryGame":
 # ==========================================
 # PHASE 3: MAIN TYCOON STUDIO DASHBOARD UI
 # ==========================================
-# Download fresh, real-time metrics on every page load to avoid stale caching!
 live_metadata = load_fresh_medallion_meta()
 
 col_title, col_logout = st.columns([3, 1])
@@ -418,7 +418,7 @@ with col_logout:
         st.rerun()
 
 # ------------------------------------------------------------
-# 🏅 12-COLUMN MEDALLION SHOWCASE (Live Dynamic Data Hook)
+# 🏅 12-COLUMN MEDALLION SHOWCASE (Safely Wrapped inside Markdown Blocks)
 # ------------------------------------------------------------
 st.markdown("<p style='font-size: 0.85rem; font-weight: 600; color: #A0AEC0; margin-bottom: 14px; letter-spacing:0.5px;'>MEDALLION SHOWCASE CASEMENT</p>", unsafe_allow_html=True)
 badge_cols = st.columns(12)
@@ -426,7 +426,6 @@ badge_cols = st.columns(12)
 for idx, wood_name in enumerate(MEDALLION_COLUMNS):
     display_label = wood_name[:5].upper()
     
-    # Read live properties straight from the Google Sheet response
     meta = live_metadata.get(wood_name, {"Rarity": "Common", "Probability": "10%", "Availability": "0", "Value": "$0"})
     rarity_val = meta.get("Rarity", "Common")
     prob_raw = str(meta.get("Probability", "10"))
@@ -439,7 +438,6 @@ for idx, wood_name in enumerate(MEDALLION_COLUMNS):
         img_filename = f"assets/{wood_name.lower()}.png"
         img_base64 = get_image_base64(img_filename)
         
-        # Base HTML format for Tooltip Content card context
         tooltip_html = f"""
         <div class='tooltip-card'>
             <div class='tip-line'>💎 Name: <span>{wood_name}</span></div>
@@ -450,6 +448,7 @@ for idx, wood_name in enumerate(MEDALLION_COLUMNS):
         </div>
         """
         
+        # FIX: Entire UI blocks are now parsed safely through Streamlit's Markdown engine
         if owned_count > 0 and img_base64:
             st.markdown(f"""
             <div class='slot-container'>
@@ -465,9 +464,7 @@ for idx, wood_name in enumerate(MEDALLION_COLUMNS):
             st.markdown(f"""
             <div class='slot-container'>
                 {tooltip_html}
-                <div class='medallion-frame-fixed'>
-                    <div class='circle-placeholder-lock'>🔒</div>
-                </div>
+                <div class='circle-placeholder-lock'>🔒</div>
                 <div class='qty-indicator-tight' style='visibility: hidden;'>x0</div>
                 <div class='badge-label-title'>{display_label}</div>
             </div>
@@ -528,10 +525,9 @@ if st.session_state.get('reward_pending', False):
             med_weights = [float(str(m.get("Probability", "10")).replace('%', '')) for m in valid_pool]
             
             final_award = random.choices(med_names, weights=med_weights, k=1)[0]
-            
             target_sheet_row = next(m for m in valid_pool if m.get("Medallion") == final_award)
             
-            # Global Medallion Stock Decrement Hook
+            # Deduct from global availability column row record
             new_availability = max(0, int(target_sheet_row.get("Availability", 1)) - 1)
             target_sheet_row["Availability"] = new_availability
             
@@ -641,7 +637,6 @@ with panel_right:
             m_pool = backend_res.get("medallions", [])
             target_row = next((m for m in m_pool if m.get("Medallion") == "Spruce"), None)
             if target_row:
-                # Direct Google Sheet Decrement Logic hook executed here
                 target_row["Availability"] = max(0, int(target_row.get("Availability", 1)) - 1)
                 sync_cloud_data("saveMedallion", target_row)
                 
@@ -662,7 +657,6 @@ with panel_right:
             m_pool = backend_res.get("medallions", [])
             target_row = next((m for m in m_pool if m.get("Medallion") == "Pine"), None)
             if target_row:
-                # Direct Google Sheet Decrement Logic hook executed here
                 target_row["Availability"] = max(0, int(target_row.get("Availability", 1)) - 1)
                 sync_cloud_data("saveMedallion", target_row)
                 
