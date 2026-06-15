@@ -48,7 +48,7 @@ if not summary_value.strip().startswith("$") and "Loading" not in summary_value:
     summary_value = f"${summary_value.strip()}"
 
 # ====================================================================
-# UNIFIED GRID LAYOUT WITH PROPORTIONAL OVERFLOW COCHLEA SAFETY WINDOWS
+# UNIFIED GRID LAYOUT WITH INTERACTIVE RARITY COLOR CLASSES
 # ====================================================================
 html_elements = """
 <style>
@@ -79,12 +79,11 @@ html_elements = """
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
         font-size: 13px;
         line-height: 1.6;
-        /* Lowered text color opacity to 0.25 for a super faint, ambient background appearance */
         color: rgba(255, 255, 255, 0.25); 
         letter-spacing: 0.1px;
     }
     .portfolio-intro span {
-        color: rgba(244, 208, 104, 0.4); /* Coordinated faint state accenting */
+        color: rgba(244, 208, 104, 0.4); 
         font-weight: 600;
     }
     .casement-grid {
@@ -135,6 +134,13 @@ html_elements = """
     .tip-line:last-child { margin-bottom: 0; }
     .tip-line span { font-weight: 700; color: #F4D068; }
 
+    /* Custom Color Themes for the dynamic Rarity tier labels */
+    .tip-line span.rarity-common { color: #CD7F32; }       /* Brownish / Bronze */
+    .tip-line span.rarity-uncommon { color: #C0C0C0; }     /* Silverish */
+    .tip-line span.rarity-rare { color: #3b82f6; }         /* Vibrant Blue */
+    .tip-line span.rarity-epic { color: #a855f7; }         /* Purple */
+    .tip-line span.rarity-legendary { color: #f59e0b; }    /* Gold/Orange */
+
     .dashboard-row {
         display: flex; justify-content: center; gap: 20px;
         margin-top: 45px; padding: 0 15px;
@@ -167,11 +173,25 @@ for wood_name in MEDALLION_COLUMNS:
     lookup_key = wood_name.strip().lower()
     sheet_row = live_data.get(lookup_key, None)
     
+    rarity_class = ""
     if sheet_row:
         rarity = sheet_row.get("Rarity", "N/A")
         value = sheet_row.get("Value", "N/A")
         availability = sheet_row.get("Availability", "N/A")
         probability = sheet_row.get("Probability", "N/A")
+        
+        # Dynamically assign CSS color selector strings based on string variants
+        clean_rarity = str(rarity).strip().lower()
+        if "common" in clean_rarity and "uncommon" not in clean_rarity:
+            rarity_class = "rarity-common"
+        elif "uncommon" in clean_rarity:
+            rarity_class = "rarity-uncommon"
+        elif "rare" in clean_rarity:
+            rarity_class = "rarity-rare"
+        elif "epic" in clean_rarity:
+            rarity_class = "rarity-epic"
+        elif "legendary" in clean_rarity:
+            rarity_class = "rarity-legendary"
         
         if value != "N/A" and not str(value).strip().startswith("$"):
             value = f"${str(value).strip()}"
@@ -186,7 +206,7 @@ for wood_name in MEDALLION_COLUMNS:
     <div class="grid-node">
         <div class="node-tooltip">
             <div class="tip-line">Name: <span>{wood_name}</span></div>
-            <div class="tip-line">Rarity: <span>{rarity}</span></div>
+            <div class="tip-line">Rarity: <span class="{rarity_class}">{rarity}</span></div>
             <div class="tip-line">Value: <span>{value}</span></div>
             <div class="tip-line">Availability: <span>{availability} left</span></div>
             <div class="tip-line">Probability: <span>{probability}</span></div>
