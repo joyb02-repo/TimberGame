@@ -92,49 +92,58 @@ st.markdown("""
         margin-bottom: 25px;
     }
     
-    /* Prevents users from clicking on or expanding the images */
-    [data-testid="stImage"] img {
-        pointer-events: none;
-        border-radius: 50%;
+    /* STYLING UNDERLAY: Hard blocks pointer actions, removes image zoom features entirely */
+    [data-testid="stImage"], [data-testid="stImage"] img, .medallion-container img {
+        pointer-events: none !important;
+        cursor: default !important;
+        hover: none !important;
+        background: none !important;
+        border: none !important;
     }
     
-    .badge-slot {
-        text-align: center;
-        width: 100%;
-        display: block;
-    }
-    
-    /* Placeholders now match the clean, full aspect scale of your 1:1 image layout */
-    .circle-placeholder {
+    /* Unified frame container ensuring identical dimensions for images and placeholders */
+    .medallion-frame {
         width: 100%;
         aspect-ratio: 1 / 1;
-        border-radius: 50%;
-        border: 2px dashed #2D3250;
-        background: #161925;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 auto 6px auto;
-        color: #4A5568;
-        font-size: 1.1rem;
-    }
-    
-    .badge-label {
-        font-size: 0.7rem;
-        font-weight: 600;
-        color: #718096;
-        text-transform: uppercase;
-        letter-spacing: 0.2px;
-        text-align: center;
-        margin-top: 2px;
+        margin: 0 auto;
+        position: relative;
     }
 
-    .qty-indicator {
+    /* Dashed placeholder locked state matches framework size dimensions */
+    .circle-placeholder-lock {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 2px dashed #222538;
+        background: #11131C;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #3A3F58;
+        font-size: 1.2rem;
+        box-sizing: border-box;
+    }
+    
+    .badge-label-title {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #5C6479;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        text-align: center;
+        margin-top: 6px;
+    }
+
+    .qty-indicator-tight {
         text-align: center; 
         font-size: 0.75rem; 
         font-weight: bold; 
         color: #F4D068; 
-        margin-top: -4px; /* Pulls text extremely tight right under the image */
+        margin-top: 4px;
+        margin-bottom: -2px;
     }
     
     .panel-box {
@@ -336,30 +345,32 @@ with col_logout:
         st.rerun()
 
 # ------------------------------------------------------------
-# 🏅 FIXED 12 CIRCULAR MEDALLION SLOT GRID (No Expand + Compact Qty)
+# 🏅 FIXED 12 CIRCULAR MEDALLION SLOT GRID (No Zoom / Equalized Size)
 # ------------------------------------------------------------
-st.markdown("<p style='font-size: 0.85rem; font-weight: 600; color: #A0AEC0; margin-bottom: 12px; letter-spacing:0.5px;'>MEDALLION SHOWCASE CASEMENT</p>", unsafe_allow_html=True)
+st.markdown("<p style='font-size: 0.85rem; font-weight: 600; color: #A0AEC0; margin-bottom: 14px; letter-spacing:0.5px;'>MEDALLION SHOWCASE CASEMENT</p>", unsafe_allow_html=True)
 badge_cols = st.columns(12)
 
 for idx, wood_name in enumerate(MEDALLION_COLUMNS):
+    display_label = wood_name[:5].upper()
     with badge_cols[idx]:
         owned_count = int(user.get(wood_name, 0))
         img_filename = f"assets/{wood_name.lower()}.png"
         
         if owned_count > 0 and os.path.exists(img_filename):
-            # Disabled zoom option container mapping using standard Streamlit rules
+            # Outer structural shell handles dimension balancing
+            st.html(f"<div class='medallion-frame'>")
             st.image(img_filename, use_container_width=True)
-            st.markdown(f"<div class='qty-indicator'>x{owned_count}</div>", unsafe_allow_html=True)
-            st.markdown(f"<div class='badge-label'>{wood_name[:5]}</div>", unsafe_allow_html=True)
+            st.html("</div>")
+            st.markdown(f"<div class='qty-indicator-tight'>x{owned_count}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='badge-label-title'>{display_label}</div>", unsafe_allow_html=True)
         else:
-            # Placeholders perfectly mirror layout scaling dimension rules automatically
+            # Placeholders perfectly match image sizes
             st.markdown(f"""
-            <div style="width: 100%; display: inline-block; vertical-align: top;">
-                <div class='badge-slot'>
-                    <div class='circle-placeholder'>🔒</div>
-                    <div class='badge-label'>{wood_name[:5]}</div>
-                </div>
+            <div class='medallion-frame'>
+                <div class='circle-placeholder-lock'>🔒</div>
             </div>
+            <div class='qty-indicator-tight' style='opacity:0;'>-</div>
+            <div class='badge-label-title'>{display_label}</div>
             """, unsafe_allow_html=True)
 
 st.write("")
