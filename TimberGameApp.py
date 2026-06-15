@@ -35,7 +35,7 @@ live_data = load_sheet_medallions()
 
 # Mock user stock balance matrix
 mock_user = {
-    "Spruce": 6, "Pine": 2, "Meranti": 0, "Balsa": 0, "Oak": 0, "Maple", 0,
+    "Spruce": 6, "Pine": 2, "Meranti": 0, "Balsa": 0, "Oak": 0, "Maple":, 0,
     "Walnut": 0, "Cherry": 0, "Mahogany": 2, "Ebony": 0, "Rosewood": 1, "Agarwood": 0
 }
 
