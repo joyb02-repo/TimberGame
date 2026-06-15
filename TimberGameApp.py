@@ -62,7 +62,7 @@ for wood in MEDALLION_COLUMNS:
 asset_map_js += "}"
 
 # ====================================================================
-# UNIFIED GRID LAYOUT WITH ADVANCED OVERFLOW SAFETY WINDOWS
+# UNIFIED GRID LAYOUT WITH INTERACTIVE CLAIM MODULE
 # ====================================================================
 html_elements = f"""
 <style>
@@ -195,7 +195,7 @@ html_elements = f"""
     }}
     
     .animation-display {{
-        margin-top: 25px; min-height: 180px; width: 100%;
+        margin-top: 25px; min-height: 230px; width: 100%;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
     }}
     .spin-box {{
@@ -206,7 +206,6 @@ html_elements = f"""
     }}
     .spin-box img {{ width: 88%; height: 88%; object-fit: contain; }}
     
-    /* New Split-Text Container Layout Styling */
     .outcome-text-wrapper {{
         margin-top: 15px;
         text-align: center;
@@ -228,6 +227,29 @@ html_elements = f"""
         color: #F4D068;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+    }}
+
+    /* Sleek Claim Action Button Styling */
+    .claim-button {{
+        margin-top: 14px;
+        width: 160px; height: 32px;
+        background-color: transparent;
+        border: 2px solid #F4D068;
+        border-radius: 4px;
+        color: #F4D068;
+        font-family: 'Inter', sans-serif;
+        font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.75px;
+        cursor: pointer; opacity: 0; transform: translateY(5px);
+        transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out, background-color 0.15s ease, color 0.15s ease;
+    }}
+    .claim-button.visible {{
+        opacity: 1;
+        transform: translateY(0);
+    }}
+    .claim-button:hover {{
+        background-color: #F4D068;
+        color: #0E1117;
     }}
 </style>
 
@@ -327,12 +349,14 @@ html_elements += f"""
             <div class="outcome-top">Successfully Mined:</div>
             <div class="outcome-bottom" id="itemNameTxt"></div>
         </div>
+        <button class="claim-button" id="claimBtn" onclick="commitClaimToSheets()">Claim Medallion</button>
     </div>
 </div>
 
 <script>
     const assetLibrary = {asset_map_js};
     const pool = ['Spruce', 'Pine', 'Meranti', 'Balsa', 'Oak', 'Maple', 'Walnut', 'Cherry', 'Mahogany', 'Ebony', 'Rosewood', 'Agarwood'];
+    let selectedItem = "";
 
     function runMiningSequence() {{
         const btn = document.getElementById('mineBtn');
@@ -340,15 +364,17 @@ html_elements += f"""
         const img = document.getElementById('cyclerImg');
         const wrapper = document.getElementById('outcomeWrapper');
         const itemTxt = document.getElementById('itemNameTxt');
+        const claimBtn = document.getElementById('claimBtn');
         
         btn.disabled = true;
         wrapper.style.opacity = "0";
+        claimBtn.classList.remove('visible');
         box.style.display = "flex";
         box.style.borderColor = "#23273A";
         
         let counter = 0;
         let speed = 40; 
-        let selectedItem = "";
+        selectedItem = "";
 
         const indexChoice = Math.floor(Math.random() * pool.length);
         selectedItem = pool[indexChoice];
@@ -369,20 +395,29 @@ html_elements += f"""
                 }}
                 box.style.borderColor = "#F4D068";
                 
-                // Inject item name cleanly on line 2
                 itemTxt.innerText = selectedItem.toUpperCase() + " MEDALLION!";
                 wrapper.style.opacity = "1";
                 
-                setTimeout(() => {{
-                    const curUrl = new URL(window.parent.location.href);
-                    curUrl.searchParams.set("mined_item", selectedItem);
-                    window.parent.location.href = curUrl.toString();
-                }}, 1500);
+                // Show claim action button rather than automatically refreshing
+                claimBtn.classList.add('visible');
             }}
         }}
         setTimeout(cycle, speed);
     }}
+
+    function commitClaimToSheets() {{
+        if (!selectedItem) return;
+        const claimBtn = document.getElementById('claimBtn');
+        claimBtn.disabled = true;
+        claimBtn.innerText = "Saving...";
+        
+        // Execute parameter pass-back which triggers the refresh and Google Sheets increment logic
+        const curUrl = new URL(window.parent.location.href);
+        curUrl.searchParams.set("mined_item", selectedItem);
+        window.parent.location.href = curUrl.toString();
+    }}
 </script>
 """
 
-st.components.v1.html(html_elements, height=730, scrolling=False)
+# Height slightly increased to 770 to prevent any layout shifting when the claim button materializes
+st.components.v1.html(html_elements, height=770, scrolling=False)
