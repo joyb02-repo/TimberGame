@@ -117,33 +117,36 @@ st.markdown("""
         margin-bottom: 25px;
     }
     
-    /* Unified Flex Row layout container */
-    .medallion-flex-row {
+    /* Custom Flex Layout Container for Medallion Row */
+    .medallion-flex-container {
         display: flex;
+        flex-wrap: nowrap;
         justify-content: space-between;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         width: 100%;
-        background: #0B0D14;
-        padding: 15px;
+        background: #0E1017;
+        padding: 16px;
         border-radius: 12px;
         border: 1px solid #1E2235;
         margin-bottom: 25px;
+        box-sizing: border-box;
     }
     
     .slot-container {
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: flex-start;
+        justify-content: center;
         flex: 1;
+        min-width: 0;
         text-align: center;
         position: relative;
     }
     
     .medallion-frame-fixed {
-        width: 65px; 
-        height: 65px;
+        width: 55px; 
+        height: 55px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -157,8 +160,8 @@ st.markdown("""
     }
     
     .circle-placeholder-lock {
-        width: 60px; 
-        height: 60px;
+        width: 50px; 
+        height: 50px;
         border-radius: 50%;
         border: 2px dashed #212435;
         background: #11131C;
@@ -166,7 +169,7 @@ st.markdown("""
         align-items: center;
         justify-content: center;
         color: #31364C;
-        font-size: 1rem;
+        font-size: 0.9rem;
         box-sizing: border-box;
     }
     
@@ -174,17 +177,17 @@ st.markdown("""
         visibility: hidden;
         opacity: 0;
         position: absolute;
-        bottom: 120%; 
+        bottom: 125%; 
         left: 50%;
         transform: translateX(-50%) translateY(5px);
-        width: 185px;
+        width: 180px;
         background: #171A26;
         border: 1px solid #2E344D;
         border-radius: 10px;
         padding: 12px;
         text-align: left;
         box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        z-index: 99999 !important;
+        z-index: 999999 !important;
         transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
         pointer-events: none;
     }
@@ -207,12 +210,16 @@ st.markdown("""
     }
     
     .badge-label-title {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         font-weight: 700;
         color: #5C6479;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-top: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
     }
 
     .qty-indicator-tight {
@@ -423,27 +430,27 @@ with col_logout:
         st.rerun()
 
 # ------------------------------------------------------------
-# 🏅 FIXED HTML/CSS FLEXBOX ROW (Eliminated column text glitches)
+# 🏅 FIXED SINGLE-BLOCK HTML/CSS FLEXBOX ENGINE
 # ------------------------------------------------------------
 st.markdown("<p style='font-size: 0.85rem; font-weight: 600; color: #A0AEC0; margin-bottom: 14px; letter-spacing:0.5px;'>MEDALLION SHOWCASE CASEMENT</p>", unsafe_allow_html=True)
 
-# Generate HTML strings for all 12 items dynamically
+# Build items string completely before dumping into Streamlit
 flex_items_html = ""
 
 for wood_name in MEDALLION_COLUMNS:
     display_label = wood_name[:5].upper()
     owned_count = int(user.get(wood_name, 0))
     
-    meta = live_metadata.get(wood_name, {"Rarity": "Common", "Probability": "10%", "Availability": "151", "Value": "$5"})
+    meta = live_metadata.get(wood_name, {"Rarity": "Common", "Probability": "10%", "Availability": "0", "Value": "$0"})
     rarity_val = meta.get("Rarity", "Common")
     prob_raw = str(meta.get("Probability", "10"))
     prob_val = prob_raw if "%" in prob_raw else f"{prob_raw}%"
     
-    # DEDUCTION ENGINE: Live sheet stock minus total amount owned by this apprentice portfolio
-    base_sheet_stock = int(meta.get("Availability", "0"))
-    adjusted_availability = max(0, base_sheet_stock - owned_count)
+    # DEDUCTION: Total Sheet Stock availability dynamic calculation logic minus current owned count
+    total_sheet_stock = int(meta.get("Availability", "0"))
+    adjusted_availability = max(0, total_sheet_stock - owned_count)
 
-    val_cost = str(meta.get("Value", "$5"))
+    val_cost = str(meta.get("Value", "$0"))
     img_filename = f"assets/{wood_name.lower()}.png"
     img_base64 = get_image_base64(img_filename)
     
@@ -480,9 +487,9 @@ for wood_name in MEDALLION_COLUMNS:
         </div>
         """
 
-# Render the entire row inside a single safe markdown injection block
+# FIX: Outputted inside a single outer container completely external to Streamlit columns
 st.markdown(f"""
-<div class='medallion-flex-row'>
+<div class='medallion-flex-container'>
     {flex_items_html}
 </div>
 """, unsafe_allow_html=True)
@@ -542,7 +549,7 @@ if st.session_state.get('reward_pending', False):
             final_award = random.choices(med_names, weights=med_weights, k=1)[0]
             target_sheet_row = next(m for m in valid_pool if m.get("Medallion") == final_award)
             
-            # Update sheet row when item drops
+            # Save decremented value out into the sheet row database column tracker
             new_availability = max(0, int(target_sheet_row.get("Availability", 1)) - 1)
             target_sheet_row["Availability"] = new_availability
             
