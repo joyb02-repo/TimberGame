@@ -52,6 +52,8 @@ if 'current_user' not in st.session_state:
     st.session_state.current_user = None
 if 'game_mode' not in st.session_state:
     st.session_state.game_mode = "Dashboard"
+if 'selected_inspect_medallion' not in st.session_state:
+    st.session_state.selected_inspect_medallion = "Spruce"
 
 # --- TIMBER RELATED CONTRACT GENERATOR POOL ---
 TIMBER_JOBS = [
@@ -95,7 +97,6 @@ def get_image_base64(path):
 # --- CONTEMPORARY UI STYLING & RESET ---
 st.set_page_config(page_title="Apprentice Studio Hub", page_icon="🪵", layout="wide")
 
-# Global CSS Injector (Kept streamlined and lightweight)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
@@ -165,6 +166,40 @@ st.markdown("""
         justify-content: space-between;
         align-items: center;
         font-size: 0.9rem;
+    }
+    
+    /* Clean CSS styles for our image-rendering frames */
+    .medallion-badge-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    }
+    .medallion-render-container {
+        width: 65px;
+        height: 65px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 6px;
+    }
+    .medallion-render-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    .lock-placeholder-node {
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        border: 2px dashed #23273A;
+        background: #121522;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #383F58;
+        font-size: 1.1rem;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -307,6 +342,39 @@ if st.session_state.game_mode == "MemoryGame":
 # ==========================================
 live_metadata = load_fresh_medallion_meta()
 
+# --- SIDEBAR COMPONENT INSPECTOR ENGINE ---
+with st.sidebar:
+    st.markdown("<h2 style='color:#F4D068; margin-top:10px;'>🔍 Specimen Inspector</h2>", unsafe_allow_html=True)
+    st.markdown("Select any medallion button on the board below to instantly lock its dynamic stats here.")
+    st.write("---")
+    
+    inspect_target = st.session_state.selected_inspect_medallion
+    if inspect_target in live_metadata:
+        target_meta = live_metadata[inspect_target]
+        owned_count = int(user.get(inspect_target, 0))
+        
+        # Calculate availability accurately matching sheet logic
+        sheet_stock = int(target_meta.get("Availability", "0"))
+        adjusted_availability = max(0, sheet_stock - owned_count)
+        
+        prob_raw = str(target_meta.get("Probability", "0%"))
+        prob_formatted = prob_raw if "%" in prob_raw else f"{prob_raw}%"
+        
+        # Clean Visual Container
+        st.markdown(f"""
+        <div style="background:#121522; border:1px solid #23283D; padding:20px; border-radius:12px;">
+            <h3 style="color:#FFFFFF; margin-top:0; margin-bottom:15px; letter-spacing:-0.5px;">🪵 {inspect_target}</h3>
+            <p style="font-size:0.9rem; margin-bottom:8px; color:#A0AEC0;">💎 Tier Rarity: <span style="color:#F4D068; font-weight:bold;">{target_meta.get('Rarity')}</span></p>
+            <p style="font-size:0.9rem; margin-bottom:8px; color:#A0AEC0;">🎲 Drop Chance: <span style="color:#F4D068; font-weight:bold;">{prob_formatted}</span></p>
+            <p style="font-size:0.9rem; margin-bottom:88; color:#A0AEC0;">📦 Vault Availability: <span style="color:#F4D068; font-weight:bold;">{adjusted_availability} units left</span></p>
+            <p style="font-size:0.9rem; margin-bottom:8px; color:#A0AEC0;">💰 Asset Market Value: <span style="color:#10B981; font-weight:bold;">{target_meta.get('Value')}</span></p>
+            <hr style="border-color:#1E2235; margin:15px 0;">
+            <p style="font-size:0.9rem; margin-bottom:0; color:#A0AEC0;">💼 Your Stock: <span style="color:#A78BFA; font-weight:bold;">x{owned_count} in Hand</span></p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.info("Select a medallion column component to process records.")
+
 col_title, col_logout = st.columns([3, 1])
 with col_title:
     st.markdown(f"<div class='dashboard-header'>🪵 {user['Username']}'s Studio Platform</div>", unsafe_allow_html=True)
@@ -318,135 +386,50 @@ with col_logout:
         st.rerun()
 
 # ------------------------------------------------------------
-# 🏅 REDESIGNED NATIVE COMPONENT GRID FRAMEWORK
+# 🏅 NATIVE SEAMLESS CASEMENT GRID DISPLAY ENGINE
 # ------------------------------------------------------------
-st.markdown("<p style='font-size: 0.85rem; font-weight: 600; color: #A0AEC0; margin-bottom: 14px; letter-spacing:0.5px;'>MEDALLION SHOWCASE CASEMENT</p>", unsafe_allow_html=True)
+st.markdown("<p style='font-size: 0.85rem; font-weight: 600; color: #A0AEC0; margin-bottom: 14px; letter-spacing:0.5px;'>MEDALLION SHOWCASE CASEMENT (CLICK TO INSPECT STATS)</p>", unsafe_allow_html=True)
 
-# Build a clean row container using 12 native Streamlit layout columns
+# Generate 12 clean layout columns natively
 medallion_slots = st.columns(12)
 
 for index, wood_name in enumerate(MEDALLION_COLUMNS):
     display_label = wood_name[:5].upper()
     owned_count = int(user.get(wood_name, 0))
     
-    meta = live_metadata.get(wood_name, {"Rarity": "Common", "Probability": "10%", "Availability": "0", "Value": "$0"})
-    rarity_val = meta.get("Rarity", "Common")
-    prob_raw = str(meta.get("Probability", "10"))
-    prob_val = prob_raw if "%" in prob_raw else f"{prob_raw}%"
-    
-    # DEDUCTION ENGINE: Live sheet stock value minus amount owned by portfolio
-    sheet_stock = int(meta.get("Availability", "0"))
-    adjusted_availability = max(0, sheet_stock - owned_count)
-    val_cost = str(meta.get("Value", "$0"))
-    
     img_filename = f"assets/{wood_name.lower()}.png"
     img_base64 = get_image_base64(img_filename)
     
-    # Clean, isolated HTML/CSS Tooltip wrapper explicitly for the HTML component iframe
-    micro_tooltip_html = f"""
-    <style>
-        .wrapper {{
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            width: 100%;
-            height: 100px;
-            cursor: pointer;
-        }}
-        .content-frame {{
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }}
-        .content-frame img {{
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }}
-        .lock-placeholder {{
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            border: 2px dashed #23273A;
-            background: #121522;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #383F58;
-            font-size: 14px;
-        }}
-        .tooltip {{
-            visibility: hidden;
-            opacity: 0;
-            position: fixed;
-            top: 5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 150px;
-            background: #161926;
-            border: 1px solid #2C324A;
-            border-radius: 8px;
-            padding: 8px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-            z-index: 999;
-            transition: opacity 0.15s ease;
-        }}
-        .wrapper:hover .tooltip {{
-            visibility: visible;
-            opacity: 1;
-        }}
-        .line {{
-            font-size: 11px;
-            color: #E2E8F0;
-            margin-bottom: 3px;
-        }}
-        .line span {{
-            font-weight: bold;
-            color: #F4D068;
-        }}
-        .qty {{
-            font-size: 11px;
-            font-weight: bold;
-            color: #F4D068;
-            margin-top: 4px;
-            text-align: center;
-        }}
-        .lbl {{
-            font-size: 10px;
-            font-weight: 700;
-            color: #5C6479;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 2px;
-            text-align: center;
-        }}
-    </style>
-    <div class="wrapper">
-        <div class="tooltip">
-            <div class="line">💎 Name: <span>{wood_name}</span></div>
-            <div class="line">🏷️ Rarity: <span>{rarity_val}</span></div>
-            <div class="line">🎲 Prob: <span>{prob_val}</span></div>
-            <div class="line">📦 Avail: <span>{adjusted_availability} left</span></div>
-            <div class="line">💰 Value: <span>{val_cost}</span></div>
-        </div>
-        <div class="content-frame">
-            {"<img src='data:image/png;base64," + img_base64 + "' />" if (owned_count > 0 and img_base64) else "<div class='lock-placeholder'>🔒</div>"}
-        </div>
-        <div class="qty" {"style='visibility:hidden;'" if owned_count <= 0 else ""}>x{owned_count}</div>
-        <div class="lbl">{display_label}</div>
-    </div>
-    """
-    
-    # Target each sub-column safely without using string manipulation on st.markdown
     with medallion_slots[index]:
-        st.components.v1.html(micro_tooltip_html, height=115, scrolling=False)
+        # Form an interactive badge element using native components
+        if owned_count > 0 and img_base64:
+            st.markdown(f"""
+            <div class='medallion-badge-wrapper'>
+                <div class='medallion-render-container'>
+                    <img src='data:image/png;base64,{img_base64}' />
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            # Dynamic highlight button color if it's the active inspected target
+            btn_type = "primary" if st.session_state.selected_inspect_medallion == wood_name else "secondary"
+            if st.button(f"x{owned_count}\n{display_label}", key=f"med_click_{wood_name}", use_container_width=True, type=btn_type):
+                st.session_state.selected_inspect_medallion = wood_name
+                st.rerun()
+        else:
+            st.markdown("""
+            <div class='medallion-badge-wrapper'>
+                <div class='medallion-render-container'>
+                    <div class='lock-placeholder-node'>🔒</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            btn_type = "primary" if st.session_state.selected_inspect_medallion == wood_name else "secondary"
+            if st.button(f"Locked\n{display_label}", key=f"med_click_{wood_name}", use_container_width=True, type=btn_type):
+                st.session_state.selected_inspect_medallion = wood_name
+                st.rerun()
 
 st.write("")
+st.write("---")
 
 # --- REAL-TIME HIGHER LEVEL METRIC BANNER ---
 col_met1, col_met2 = st.columns(2)
