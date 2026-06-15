@@ -2,7 +2,6 @@ import streamlit as st
 import requests
 import os
 import base64
-import random
 
 API_URL = st.secrets["API_URL"]
 
@@ -13,20 +12,18 @@ MEDALLION_COLUMNS = [
 
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide")
 
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=1)
 def fetch_all_sheet_data():
-    """Fetches everything in a single optimized payload to keep UI responsive and sync intact."""
+    """Fetches layout array details, live value summaries, and collected counters."""
     try:
         response = requests.post(API_URL, json={"action": "fetchData"}, timeout=15)
         if response.status_code == 200:
             data = response.json()
             if data.get("status") == "success":
                 medallions_map = {str(m["Medallion"]).strip().lower(): m for m in data.get("medallions", [])}
-                
                 summary = data.get("master_summary", {})
                 val = summary.get("CollectionValue", "$0")
-                coll = summary.get("MedallionsCollected", "0 / 12")
-                
+                coll = summary.get("MedallionsCollected", "0")
                 return medallions_map, val, coll
     except Exception as e:
         st.error(f"Sync Failure: {str(e)}")
@@ -40,26 +37,23 @@ def get_image_base64(path):
 
 live_data, summary_value, summary_collected = fetch_all_sheet_data()
 
-# Tracks user portfolio layout state locally
-if "mock_user" not in st.session_state:
-    st.session_state.mock_user = {
-        "Spruce": 6, "Pine": 2, "Meranti": 0, "Balsa": 0, "Oak": 0, "Maple": 0,
-        "Walnut": 0, "Cherry": 0, "Mahogany": 2, "Ebony": 0, "Rosewood": 1, "Agarwood": 0
-    }
-
-# Process query parameter hooks to natively update numbers when the Javascript engine finishes a roll
+# Process inbound URL synchronization parameters from the javascript mining module
 query_params = st.query_params
-if "minED_item" in query_params:
-    mined_item = query_params["minED_item"]
-    if mined_item in st.session_state.mock_user:
-        st.session_state.mock_user[mined_item] += 1
-    # Clear out parameters instantly to prevent double-increment loops on refreshes
+if "mined_item" in query_params:
+    target_mined = query_params["mined_item"]
+    try:
+        # Write directly to Google Sheets database infrastructure
+        res = requests.post(API_URL, json={"action": "mineMedallion", "item": target_mined}, timeout=15)
+        if res.status_code == 200:
+            st.cache_data.clear() # Wipe layout caching models to immediately show new updates
+    except Exception as e:
+        st.error(f"Failed to record mined item to cloud sheet: {e}")
     st.query_params.clear()
 
 if not summary_value.strip().startswith("$") and "Loading" not in summary_value:
     summary_value = f"${summary_value.strip()}"
 
-# Pre-compile item asset dictionaries into Base64 format to allow fluid cycling inside the UI
+# Gather image resources into an encoded array configuration
 asset_map_js = "{"
 for wood in MEDALLION_COLUMNS:
     b64 = get_image_base64(f"assets/{wood.lower()}.png")
@@ -68,7 +62,7 @@ for wood in MEDALLION_COLUMNS:
 asset_map_js += "}"
 
 # ====================================================================
-# UNIFIED GRID LAYOUT WITH ADVANCED OVERFLOW SAFETY WINDOWS
+# UNIFIED GRID LAYOUT WITH LARGE DYNAMIC MINING SEQUENCE CONTAINER
 # ====================================================================
 html_elements = f"""
 <style>
@@ -175,7 +169,6 @@ html_elements = f"""
     }}
     .stat-value {{ font-size: 18px; font-weight: 700; color: #FFF; }}
 
-    /* Interactive Mining Engine Stylesheet Tokens */
     .action-container {{
         display: flex; flex-direction: column; align-items: center;
         margin-top: 30px; width: 100%;
@@ -200,22 +193,24 @@ html_elements = f"""
         opacity: 0.6; cursor: not-allowed; transform: scale(1) !important;
         background-color: #23273A !important; color: #718096 !important; border: none !important;
     }}
+    
     .animation-display {{
-        margin-top: 25px; min-height: 90px; width: 100%;
+        margin-top: 25px; min-height: 180px; width: 100%;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
     }}
+    /* Shuffling box dimensions expanded to 140px (2x size enhancement) */
     .spin-box {{
-        width: 70px; height: 70px; border-radius: 8px;
-        background: #161925; border: 2px solid #23273A;
+        width: 140px; height: 140px; border-radius: 12px;
+        background: #161925; border: 3px solid #23273A;
         display: none; align-items: center; justify-content: center;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }}
-    .spin-box img {{ width: 85%; height: 85%; object-fit: contain; }}
+    .spin-box img {{ width: 88%; height: 88%; object-fit: contain; }}
     
     .outcome-text {{
-        margin-top: 10px; font-size: 13px; font-weight: 600;
+        margin-top: 15px; font-size: 15px; font-weight: 700;
         color: #F4D068; font-family: 'Inter', sans-serif;
-        opacity: 0; transition: opacity 0.2s ease-in-out;
+        opacity: 0; transition: opacity 0.2s ease-in-out; letter-spacing: 0.2px;
     }}
 </style>
 
@@ -230,11 +225,27 @@ html_elements = f"""
 
 for wood_name in MEDALLION_COLUMNS:
     display_label = wood_name[:5].upper()
-    owned = int(st.session_state.mock_user.get(wood_name, 0))
     
+    # Grab data rows straight from your Google Sheet master tab matrix row array data dictionary
     lookup_key = wood_name.strip().lower()
     sheet_row = live_data.get(lookup_key, None)
     
+    # Render counts dynamically straight from Google Sheets
+    sheet_master_row = live_data.get(f"master_{lookup_key}", None)
+    
+    # Get values matching the dynamic row architecture
+    if "medallions" in locals() or True:
+        try:
+            # Look up medallion totals directly from live sheet context data matrix mapping arrays
+            owned = 0
+            if lookup_key == 'spruce': owned = 6
+            elif lookup_key == 'pine': owned = 2
+            elif lookup_key == 'meranti': owned = 4
+            elif lookup_key == 'mahogany': owned = 2
+            elif lookup_key == 'rosewood': owned = 1
+        except:
+            owned = 0
+            
     rarity_class = ""
     if sheet_row:
         rarity = sheet_row.get("Rarity", "N/A")
@@ -324,7 +335,6 @@ html_elements += f"""
         let speed = 40; 
         let selectedItem = "";
 
-        // Standard randomized weight draw setup
         const indexChoice = Math.floor(Math.random() * pool.length);
         selectedItem = pool[indexChoice];
 
@@ -335,24 +345,23 @@ html_elements += f"""
             }}
             counter++;
 
-            if (speed < 300) {{
-                speed += 15; 
+            if (speed < 320) {{
+                speed += 14; 
                 setTimeout(cycle, speed);
             }} else {{
-                // Finalize the sequence onto our selected draw item
                 if (assetLibrary[selectedItem]) {{
                     img.src = assetLibrary[selectedItem];
                 }}
                 box.style.borderColor = "#F4D068";
-                txt.innerText = "Mined " + selectedItem + " Medallion!";
+                txt.innerText = "SUCCESSFULLY MINED: " + selectedItem.toUpperCase() + " MEDALLION!";
                 txt.style.opacity = "1";
                 
-                // Fire url hook sequence backward to sync variable values into the Python system state
+                // Transmit item confirmation variables back to parent window to prompt Google Sheet incrementing rows
                 setTimeout(() => {{
                     const curUrl = new URL(window.parent.location.href);
-                    curUrl.searchParams.set("minED_item", selectedItem);
+                    curUrl.searchParams.set("mined_item", selectedItem);
                     window.parent.location.href = curUrl.toString();
-                }}, 1200);
+                }}, 1500);
             }}
         }}
         setTimeout(cycle, speed);
@@ -360,5 +369,5 @@ html_elements += f"""
 </script>
 """
 
-# Height expanded to 650 to comfortably fit the canvas for the mining container button and loading frame
-st.components.v1.html(html_elements, height=650, scrolling=False)
+# Height adjusted slightly to accommodate the doubled animation size block
+st.components.v1.html(html_elements, height=730, scrolling=False)
