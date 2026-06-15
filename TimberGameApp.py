@@ -12,7 +12,7 @@ MEDALLION_COLUMNS = [
 
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide")
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=5)
 def fetch_all_sheet_data():
     """Fetches everything in a single optimized payload to keep UI responsive and sync intact."""
     try:
@@ -20,10 +20,8 @@ def fetch_all_sheet_data():
         if response.status_code == 200:
             data = response.json()
             if data.get("status") == "success":
-                # Parse medallions list into key lookup map
                 medallions_map = {str(m["Medallion"]).strip().lower(): m for m in data.get("medallions", [])}
                 
-                # Pull summary data object
                 summary = data.get("master_summary", {})
                 val = summary.get("CollectionValue", "$0")
                 coll = summary.get("MedallionsCollected", "0 / 12")
@@ -31,7 +29,7 @@ def fetch_all_sheet_data():
                 return medallions_map, val, coll
     except Exception as e:
         st.error(f"Sync Failure: {str(e)}")
-    return {}, "$0", "0 / 12"
+    return {}, "Loading...", "Loading..."
 
 def get_image_base64(path):
     if os.path.exists(path):
@@ -39,22 +37,16 @@ def get_image_base64(path):
             return base64.b64encode(image_file.read()).decode()
     return None
 
-# Pull synchronized data records in one clean shot
 live_data, summary_value, summary_collected = fetch_all_sheet_data()
 
-# Mock user stock balance matrix
 mock_user = {
     "Spruce": 6, "Pine": 2, "Meranti": 0, "Balsa": 0, "Oak": 0, "Maple": 0,
     "Walnut": 0, "Cherry": 0, "Mahogany": 2, "Ebony": 0, "Rosewood": 1, "Agarwood": 0
 }
 
-# Ensure summaries carry aesthetic fallback indicators if empty
-if not summary_value.strip().startswith("$") and summary_value != "Sync Err":
+if not summary_value.strip().startswith("$") and "Loading" not in summary_value:
     summary_value = f"${summary_value.strip()}"
 
-# ====================================================================
-# UNIFIED GRID LAYOUT WITH ADVANCED STYLING INTERFACES
-# ====================================================================
 html_elements = """
 <style>
     body {
@@ -99,7 +91,6 @@ html_elements = """
     .quantity-badge { font-size: 12px; font-weight: 700; color: #F4D068; margin-bottom: 3px; min-height: 15px; }
     .label-badge { font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    /* Absolute Floating Tooltip Card Layout */
     .node-tooltip {
         visibility: hidden; opacity: 0; position: absolute;
         bottom: 110px; left: 50%; transform: translateX(-50%);
@@ -109,7 +100,6 @@ html_elements = """
     }
     .grid-node:hover .node-tooltip { visibility: visible; opacity: 1; }
     
-    /* Edge Clip Protection Rules */
     .grid-node:first-child .node-tooltip { left: 0; transform: translateX(0); }
     .grid-node:last-child .node-tooltip { left: auto; right: 0; transform: translateX(0); }
     
@@ -117,40 +107,23 @@ html_elements = """
     .tip-line:last-child { margin-bottom: 0; }
     .tip-line span { font-weight: 700; color: #F4D068; }
 
-    /* Dashboard Metrics Component Section Layout */
     .dashboard-row {
-        display: flex;
-        justify-content: center;
-        gap: 20px;
-        margin-top: 35px;
-        padding: 0 15px;
+        display: flex; justify-content: center; gap: 20px;
+        margin-top: 35px; padding: 0 15px;
     }
     .stat-card {
-        background: #161925;
-        border: 1px solid #23273A;
-        border-radius: 6px;
-        padding: 10px 20px;
-        min-width: 180px;
-        text-align: center;
+        background: #161925; border: 1px solid #23273A; border-radius: 6px;
+        padding: 10px 20px; min-width: 180px; text-align: center;
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
     .stat-label {
-        font-size: 11px;
-        text-transform: uppercase;
-        color: #718096;
-        letter-spacing: 0.75px;
-        margin-bottom: 4px;
-        font-weight: 600;
+        font-size: 11px; text-transform: uppercase; color: #718096;
+        letter-spacing: 0.75px; margin-bottom: 4px; font-weight: 600;
     }
-    .stat-value {
-        font-size: 18px;
-        font-weight: 700;
-        color: #FFF;
-    }
+    .stat-value { font-size: 18px; font-weight: 700; color: #FFF; }
 </style>
 
 <div class="portfolio-title">Timber Medallion Portfolio</div>
-
 <div class="casement-grid">
 """
 
@@ -172,7 +145,7 @@ for wood_name in MEDALLION_COLUMNS:
         if probability != "N/A" and not str(probability).endswith("%"):
             probability = f"{probability}%"
     else:
-        rarity, value, availability, probability = "Loading...", "Loading...", "Loading...", "Loading..."
+        rarity = value = availability = probability = "Loading..."
         
     img_b64 = get_image_base64(f"assets/{wood_name.lower()}.png")
     
@@ -194,7 +167,6 @@ for wood_name in MEDALLION_COLUMNS:
     </div>
     """
 
-# Appending the metrics grid block section
 html_elements += f"""
 </div>
 
