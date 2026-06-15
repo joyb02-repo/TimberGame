@@ -6,38 +6,43 @@ import base64
 # --- SECURE APPS SCRIPT LINK ---
 API_URL = st.secrets["API_URL"]
 
-# Master Order list matching your Google Sheet rows exactly
+# Exact 12-medallion order matching your sheet rows
 MEDALLION_COLUMNS = [
     "Spruce", "Pine", "Meranti", "Balsa", "Oak", "Maple", 
     "Walnut", "Cherry", "Mahogany", "Ebony", "Rosewood", "Agarwood"
 ]
 
-# Set clean dark dashboard background configuration
-st.set_page_config(page_title="Medallion Casement Core", page_icon="🏅", layout="wide")
+st.set_page_config(page_title="Medallion Core Showcase", page_icon="🏅", layout="wide")
 
-# --- DATA SYNC ENGINE ---
+# --- FOOLPROOF DATA FETCH ENGINE ---
 def load_perfect_metadata():
-    """Fetches real-time parameters straight from the Medallions sheet tab."""
+    """Fetches real-time parameters and normalizes keys to prevent sheet mismatches."""
     try:
         response = requests.post(API_URL, json={"action": "fetchData"}, timeout=15)
         if response.status_code == 200:
             backend_res = response.json()
-            
-            # Map items using the exact column keys matching your spreadsheet
             meta_map = {}
+            
             for item in backend_res.get("medallions", []):
-                m_name = item.get("Medallion")
-                if m_name:
-                    meta_map[m_name] = {
+                raw_name = item.get("Medallion")
+                if raw_name:
+                    # Normalize the key name (lowercase, no trailing spaces) to guarantee alignment
+                    clean_name = str(raw_name).strip().lower()
+                    
+                    # Dynamically catch "Asset Price" or "Value" columns seamlessly
+                    price_val = item.get("Asset Price") or item.get("Value") or "$0"
+                    
+                    meta_map[clean_name] = {
+                        "RealName": str(raw_name).strip(),
                         "Rarity": item.get("Rarity", "Common"),
                         "Probability": str(item.get("Probability", "0%")),
-                        "Availability": int(item.get("Availability", 0)),
-                        "Value": item.get("Asset Price") or item.get("Value") or "$0"
+                        "Availability": str(item.get("Availability", "0")),
+                        "Value": str(price_val)
                     }
-            return meta_map, backend_res.get("users", [])
+            return meta_map
     except Exception as e:
-        st.error(f"Sync Engine Error: {str(e)}")
-    return {}, []
+        st.error(f"Google Sheet Sync Error: {str(e)}")
+    return {}
 
 def get_image_base64(path):
     if os.path.exists(path):
@@ -45,34 +50,33 @@ def get_image_base64(path):
             return base64.b64encode(image_file.read()).decode()
     return None
 
-# --- LOAD FRESH MOUNT DATA ---
-live_metadata, users_list = load_perfect_metadata()
+# Fetch the live, sanitized database records
+live_metadata = load_perfect_metadata()
 
-# Pick a mock profile structure or hook your active session state user row here
-# (Using a temporary placeholder profile to track inventory counts matching your asset sheet)
+# Mock user stock metrics (replace with your dynamic session user variables as needed)
 mock_user = {
-    "Username": "joyb02",
     "Spruce": 6, "Pine": 2, "Meranti": 0, "Balsa": 0, "Oak": 0, "Maple": 0,
     "Walnut": 0, "Cherry": 0, "Mahogany": 2, "Ebony": 0, "Rosewood": 1, "Agarwood": 0
 }
 
-# --- HEADER RENDER ---
-st.markdown(f"""
+# --- HEADER TITLE DISPLAY ---
+st.markdown("""
     <h2 style='font-family: system-ui; font-weight: 800; color: #FFFFFF; margin-bottom: 5px;'>🪵 Medallion Showcase Casement</h2>
-    <p style='font-family: system-ui; color: #A0AEC0; font-size: 0.95rem; margin-bottom: 30px;'>Live structural synchronization matrix.</p>
+    <p style='font-family: system-ui; color: #A0AEC0; font-size: 0.95rem; margin-bottom: 25px;'>Hover over unlocked components to inspect live spreadsheet parameters.</p>
 """, unsafe_allow_html=True)
 
+
 # ====================================================================
-# UNIFIED GRID HOVER ENGINE (Single Iframe HTML Generator)
+# UNIFIED GRID RENDERER (Single HTML Iframe Engine)
 # ====================================================================
 
-# 1. Base Global Styles for the Iframe Environment
+# Global stylesheet setup to create a dedicated safety headroom for expanding tooltips
 html_elements = """
 <style>
     body {
         margin: 0;
         padding: 0;
-        background-color: #0E1117; /* Matches seamless Streamlit canvas */
+        background-color: #0E1117; 
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         overflow: hidden;
     }
@@ -80,7 +84,7 @@ html_elements = """
         display: grid;
         grid-template-columns: repeat(12, 1fr);
         gap: 12px;
-        padding-top: 130px; /* Generates a dedicated safety ceiling for tooltips to expand into */
+        padding-top: 140px; /* Provides ample vertical headroom for hover containers */
         padding-left: 10px;
         padding-right: 10px;
     }
@@ -132,19 +136,19 @@ html_elements = """
         letter-spacing: 0.5px;
     }
     
-    /* Absolute Positioning Tooltip Logic */
+    /* Clean, Floating Tooltip Containers positioned safely above components */
     .node-tooltip {
         visibility: hidden;
         opacity: 0;
         position: absolute;
-        bottom: 105px; /* Safely floats above the image icon asset */
+        bottom: 110px; 
         left: 50%;
         transform: translateX(-50%);
-        width: 160px;
+        width: 165px;
         background: #161925;
         border: 1px solid #282E48;
         border-radius: 8px;
-        padding: 10px;
+        padding: 12px;
         box-shadow: 0 10px 25px rgba(0,0,0,0.6);
         z-index: 99999;
         transition: opacity 0.15s ease, transform 0.15s ease;
@@ -157,8 +161,9 @@ html_elements = """
     .tip-line {
         font-size: 11px;
         color: #E2E8F0;
-        margin-bottom: 4px;
+        margin-bottom: 5px;
         white-space: nowrap;
+        text-align: left;
     }
     .tip-line span {
         font-weight: 700;
@@ -168,32 +173,37 @@ html_elements = """
 <div class="casement-grid">
 """
 
-# 2. Dynamic Structural Loop Processing
+# Structural mapping loop
 for wood_name in MEDALLION_COLUMNS:
     display_label = wood_name[:5].upper()
     owned = int(mock_user.get(wood_name, 0))
     
-    # Extract spreadsheet metadata definitions with hard coded defaults
-    meta = live_metadata.get(wood_name, {"Rarity": "Common", "Probability": "0%", "Availability": 0, "Value": "$0"})
+    # Use our normalized string to fetch matching metrics from the sheet dictionary
+    lookup_key = wood_name.strip().lower()
     
-    rarity = meta["Rarity"]
-    prob = meta["Probability"] if "%" in meta["Probability"] else f"{meta['Probability']}%"
-    val = meta["Value"]
-    
-    # Availability deduction engine matching sheet values minus inventory ownership counts
-    avail_left = max(0, meta["Availability"] - owned)
-    
-    # Process local path mapping strings
+    if lookup_key in live_metadata:
+        meta = live_metadata[lookup_key]
+        rarity = meta["Rarity"]
+        prob = meta["Probability"] if "%" in meta["Probability"] else f"{meta['Probability']}%"
+        avail = meta["Availability"]
+        val = meta["Value"]
+    else:
+        # Secure fallbacks in case row completely disappears from spreadsheet tracking
+        rarity = "Unknown"
+        prob = "0%"
+        avail = "0"
+        val = "$0"
+
     img_b64 = get_image_base64(f"assets/{wood_name.lower()}.png")
     
-    # Build item component segment
+    # Inject item variables into the single frame
     html_elements += f"""
     <div class="grid-node">
         <div class="node-tooltip">
             <div class="tip-line">💎 Name: <span>{wood_name}</span></div>
             <div class="tip-line">🏷️ Rarity: <span>{rarity}</span></div>
             <div class="tip-line">🎲 Prob: <span>{prob}</span></div>
-            <div class="tip-line">📦 Avail: <span>{avail_left} left</span></div>
+            <div class="tip-line">📦 Avail: <span>{avail} left</span></div>
             <div class="tip-line">💰 Value: <span>{val}</span></div>
         </div>
         
@@ -208,5 +218,5 @@ for wood_name in MEDALLION_COLUMNS:
 
 html_elements += "</div>"
 
-# 3. Mount single components to viewport frame with unified height boundaries
-st.components.v1.html(html_elements, height=260, scrolling=False)
+# Deploy our single, unified, scroll-free component
+st.components.v1.html(html_elements, height=270, scrolling=False)
