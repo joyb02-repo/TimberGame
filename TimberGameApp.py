@@ -81,7 +81,7 @@ if st.button("🎰 Pull Design Lever (-20 Credits)", type="primary"):
         st.error("Not enough cash to buy a blueprint!")
 
 # Display current active build details
-if st.session_state.session_state.current_blueprint:
+if st.session_state.current_blueprint:
     bp = st.session_state.current_blueprint
     st.info(f"**Active Project:** {bp['name']} | **Requires:** {bp['wood']} (Costs {bp['cost']} to prep) | **Potential Payout:** {bp['payout']} 💰")
 else:
