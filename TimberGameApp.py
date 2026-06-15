@@ -3,6 +3,7 @@ import requests
 import random
 import time
 import os
+import base64
 
 # --- SECURE APPS SCRIPT LINK ---
 API_URL = st.secrets["API_URL"]
@@ -67,6 +68,13 @@ def init_memory_game(payout_value):
     st.session_state.pending_job_payout = payout_value
     st.session_state.game_mode = "MemoryGame"
 
+# --- HELPER FUNCTION: CONVERT LOCAL IMAGE TO BASE64 ---
+def get_image_base64(path):
+    if os.path.exists(path):
+        with open(path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode()
+    return None
+
 # --- CONTEMPORARY UI STYLING & RESET ---
 st.set_page_config(page_title="Apprentice Studio Hub", page_icon="🪵", layout="wide")
 
@@ -92,38 +100,45 @@ st.markdown("""
         margin-bottom: 25px;
     }
     
-    /* STYLING UNDERLAY: Hard blocks pointer actions, removes image zoom features entirely */
-    [data-testid="stImage"], [data-testid="stImage"] img, .medallion-container img {
-        pointer-events: none !important;
-        cursor: default !important;
-        hover: none !important;
-        background: none !important;
-        border: none !important;
+    /* UNIFIED MATRIX GRID STYLING: Enforces structural harmony across all 12 columns */
+    .slot-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        width: 100%;
+        text-align: center;
     }
     
-    /* Unified frame container ensuring identical dimensions for images and placeholders */
-    .medallion-frame {
+    .medallion-frame-fixed {
         width: 100%;
+        max-width: 70px; /* Constrains size so circles don't blow up on wide monitors */
         aspect-ratio: 1 / 1;
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0 auto;
-        position: relative;
     }
 
-    /* Dashed placeholder locked state matches framework size dimensions */
-    .circle-placeholder-lock {
+    .medallion-img-render {
         width: 100%;
         height: 100%;
+        object-fit: contain;
+        pointer-events: none !important;
+        user-select: none !important;
+    }
+    
+    .circle-placeholder-lock {
+        width: 90%; /* Slightly smaller than full image boundaries for visual crispness */
+        height: 90%;
         border-radius: 50%;
-        border: 2px dashed #222538;
+        border: 2px dashed #212435;
         background: #11131C;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #3A3F58;
-        font-size: 1.2rem;
+        color: #31364C;
+        font-size: 1rem;
         box-sizing: border-box;
     }
     
@@ -132,18 +147,20 @@ st.markdown("""
         font-weight: 700;
         color: #5C6479;
         text-transform: uppercase;
-        letter-spacing: 0.6px;
-        text-align: center;
-        margin-top: 6px;
+        letter-spacing: 0.5px;
+        margin-top: 4px;
+        width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
     }
 
     .qty-indicator-tight {
-        text-align: center; 
         font-size: 0.75rem; 
         font-weight: bold; 
         color: #F4D068; 
         margin-top: 4px;
-        margin-bottom: -2px;
+        height: 14px;
+        line-height: 14px;
     }
     
     .panel-box {
@@ -345,7 +362,7 @@ with col_logout:
         st.rerun()
 
 # ------------------------------------------------------------
-# 🏅 FIXED 12 CIRCULAR MEDALLION SLOT GRID (No Zoom / Equalized Size)
+# 🏅 RE-ENGINEERED PURE HTML 12-COLUMN MEDALLION SHOWCASE
 # ------------------------------------------------------------
 st.markdown("<p style='font-size: 0.85rem; font-weight: 600; color: #A0AEC0; margin-bottom: 14px; letter-spacing:0.5px;'>MEDALLION SHOWCASE CASEMENT</p>", unsafe_allow_html=True)
 badge_cols = st.columns(12)
@@ -355,22 +372,29 @@ for idx, wood_name in enumerate(MEDALLION_COLUMNS):
     with badge_cols[idx]:
         owned_count = int(user.get(wood_name, 0))
         img_filename = f"assets/{wood_name.lower()}.png"
+        img_base64 = get_image_base64(img_filename)
         
-        if owned_count > 0 and os.path.exists(img_filename):
-            # Outer structural shell handles dimension balancing
-            st.html(f"<div class='medallion-frame'>")
-            st.image(img_filename, use_container_width=True)
-            st.html("</div>")
-            st.markdown(f"<div class='qty-indicator-tight'>x{owned_count}</div>", unsafe_allow_html=True)
-            st.markdown(f"<div class='badge-label-title'>{display_label}</div>", unsafe_allow_html=True)
-        else:
-            # Placeholders perfectly match image sizes
+        if owned_count > 0 and img_base64:
+            # Renders image via raw HTML to completely strip out Streamlit's lightbox/fullscreen button wrappers
             st.markdown(f"""
-            <div class='medallion-frame'>
-                <div class='circle-placeholder-lock'>🔒</div>
+            <div class='slot-container'>
+                <div class='medallion-frame-fixed'>
+                    <img class='medallion-img-render' src='data:image/png;base64,{img_base64}' />
+                </div>
+                <div class='qty-indicator-tight'>x{owned_count}</div>
+                <div class='badge-label-title'>{display_label}</div>
             </div>
-            <div class='qty-indicator-tight' style='opacity:0;'>-</div>
-            <div class='badge-label-title'>{display_label}</div>
+            """, unsafe_allow_html=True)
+        else:
+            # Placeholders perfectly share structural parameters to align layout dimensions
+            st.markdown(f"""
+            <div class='slot-container'>
+                <div class='medallion-frame-fixed'>
+                    <div class='circle-placeholder-lock'>🔒</div>
+                </div>
+                <div class='qty-indicator-tight' style='visibility: hidden;'>x0</div>
+                <div class='badge-label-title'>{display_label}</div>
+            </div>
             """, unsafe_allow_html=True)
 
 st.write("")
