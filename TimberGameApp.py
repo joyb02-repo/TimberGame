@@ -35,7 +35,8 @@ live_data = load_sheet_medallions()
 
 # Mock user stock balance matrix
 mock_user = {
-    "Spruce": 6, "Pine": 2, "Meranti": 0, "Balsa": 0, "Oak": 0, "Maple": 0, "Walnut": 0, "Cherry": 0, "Mahogany": 2, "Ebony": 0, "Rosewood": 1, "Agarwood": 0
+    "Spruce": 6, "Pine": 2, "Meranti": 0, "Balsa": 0, "Oak": 0, "Maple": 0,
+    "Walnut": 0, "Cherry": 0, "Mahogany": 2, "Ebony": 0, "Rosewood": 1, "Agarwood": 0
 }
 
 st.markdown("<h3 style='font-family:system-ui; color:#FFF;'>MEDALLION SHOWCASE</h3>", unsafe_allow_html=True)
@@ -114,7 +115,11 @@ for wood_name in MEDALLION_COLUMNS:
         availability = sheet_row.get("Availability", "N/A")
         probability = sheet_row.get("Probability", "N/A")
         
-        # String safety check to guarantee percentage symbols are appended to numbers
+        # Enforce uniform currency formatting prefix
+        if value != "N/A" and not str(value).strip().startswith("$"):
+            value = f"${str(value).strip()}"
+        
+        # Enforce uniform percentage formatting suffix
         if probability != "N/A" and not str(probability).endswith("%"):
             probability = f"{probability}%"
     else:
