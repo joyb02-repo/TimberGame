@@ -1,200 +1,172 @@
-import streamlit as pd
 import streamlit as st
 import random
+import time
 
-# Initialize session states for the game
-if 'step' not in st.session_state:
-    st.session_state.step = "Intro"
+# --- INITIALIZE STATE ---
 if 'coins' not in st.session_state:
-    st.session_state.coins = 100
-if 'inventory' not in st.session_state:
-    st.session_state.inventory = []
-if 'safety_passed' not in st.session_state:
-    st.session_state.safety_passed = False
+    st.session_state.coins = 120
+if 'xp' not in st.session_state:
+    st.session_state.xp = 0
+if 'current_blueprint' not in st.session_state:
+    st.session_state.current_blueprint = None
+if 'game_logs' not in st.session_state:
+    st.session_state.game_logs = ["Welcome to the Woodshop. Pull a blueprint to start!"]
 
-# Set page config
-st.set_page_config(page_title="Wood Shop Tycoon", page_icon="🪵", layout="centered")
+st.set_page_config(page_title="Timber Tycoon: Overdrive", page_icon="🪚", layout="centered")
 
-# --- CUSTOM THEME STYLING ---
+# --- UI STYLING ---
 st.markdown("""
     <style>
-    .main-title { font-size: 2.8rem; font-weight: 800; color: #8B5A2B; text-align: center; margin-bottom: 10px; }
-    .sub-title { font-size: 1.2rem; text-align: center; color: #555; margin-bottom: 30px; }
-    .stat-box { background-color: #F5F5DC; padding: 15px; border-radius: 10px; border: 2px solid #8B5A2B; text-align: center; font-weight: bold; font-size: 1.2rem; }
+    .title { font-family: 'Courier New', monospace; font-size: 3rem; text-align: center; color: #D2B48C; font-weight: bold; text-shadow: 2px 2px #5c4033; }
+    .log-box { background-color: #1e1e24; color: #00ffcc; padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace; height: 150px; overflow-y: auto; border: 1px solid #333; }
+    .stat-text { font-size: 1.5rem; font-weight: bold; color: #FFA500; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- GAME HEADER ---
-st.markdown("<div class='main-title'>🪵 Wood Shop Tycoon</div>", unsafe_allow_html=True)
-st.markdown("<div class='sub-title'>Year 8 Timber Technology Challenge</div>", unsafe_allow_html=True)
+st.markdown("<div class='title'>🪚 TIMBER TYCOON: OVERDRIVE</div>", unsafe_allow_html=True)
+st.write("---")
 
-# Display stats sidebar if the player is past the intro
-if st.session_state.step != "Intro":
-    st.sidebar.markdown(f"### 🎒 Player Dashboard")
-    st.sidebar.markdown(f"**Wallet:** {st.session_state.coins} Timber Credits")
-    st.sidebar.markdown(f"**Safety Status:** {'✅ Certified' if st.session_state.safety_passed else '❌ Uncertified'}")
-    if st.session_state.inventory:
-        st.sidebar.markdown(f"**Materials:** {', '.join(st.session_state.inventory)}")
-    else:
-        st.sidebar.markdown("**Materials:** Empty")
-    
-    if st.sidebar.button("Restart Game"):
+# --- WIN / LOSE CONDITIONS ---
+if st.session_state.coins <= 0:
+    st.error("💀 BANKRUPT! You ran out of timber credits. Your workshop has closed down.")
+    if st.button("Beg Teacher for an Extension (Reset)"):
+        st.session_state.clear()
+        st.rerun()
+    st.stop()
+
+if st.session_state.coins >= 500:
+    st.balloons()
+    st.success("👑 MASTER CRAFTSMAN! You hit 500+ credits and built a woodworking empire!")
+    if st.button("Start a New Build"):
+        st.session_state.clear()
+        st.rerun()
+    st.stop()
+
+# --- TOP DASHBOARD ---
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric(label="Timber Credits", value=f"{st.session_state.coins}💰")
+with col2:
+    st.metric(label="Reputation XP", value=f"{st.session_state.xp}⭐")
+with col3:
+    # Quick reset
+    if st.button("🔄 Full Reset"):
         st.session_state.clear()
         st.rerun()
 
-# --- MODULES ---
+st.progress(min(st.session_state.coins / 500, 1.0), text=f"Progress to Master Craftsman (500 Credits)")
 
-# STEP 1: INTRO SCREEN
-if st.session_state.step == "Intro":
-    st.markdown("""
-    ### Welcome Apprentice! 🛠️
-    Before you can build high-end projects and run your own successful woodworking business, you need to prove your skills. 
-    
-    **Your Journey:**
-    1. **Earn your Safety License:** You can't touch the tools without passing the safety check.
-    2. **Identify your Tools:** Prove you know your Try Squares from your Tenon Saws.
-    3. **Run the Wood Shop:** Buy raw wood, manufacture projects cleanly, manage your sustainability impact, and try to make a fortune!
-    """)
-    
-    if st.button("Start My Apprenticeship", type="primary"):
-        st.session_state.step = "Safety"
+# --- THE BLUEPRINT SLOT MACHINE ---
+st.header("🎰 1. The Blueprint Generator")
+st.write("Spend **20 Credits** to roll the dice on a random design client assignment.")
+
+# Available random project combinations
+BLUEPRINTS = {
+    "🛹 Skateboard Deck": {"wood": "Tasmanian Oak (Hardwood)", "cost": 40, "payout": 110, "difficulty": "Hard"},
+    "🎸 Custom Ukulele": {"wood": "Mahogany (Premium)", "cost": 60, "payout": 160, "difficulty": "Expert"},
+    "📥 Desktop Organizer": {"wood": "Radiata Pine (Softwood)", "cost": 15, "payout": 45, "difficulty": "Easy"},
+    "🪑 Minimalist Stool": {"wood": "Radiata Pine (Softwood)", "cost": 25, "payout": 65, "difficulty": "Medium"},
+    "🐦 Eco Birdhouse": {"wood": "Recycled Pallet Wood", "cost": 10, "payout": 35, "difficulty": "Easy"}
+}
+
+if st.button("🎰 Pull Design Lever (-20 Credits)", type="primary"):
+    if st.session_state.coins >= 20:
+        st.session_state.coins -= 20
+        rolled_name = random.choice(list(BLUEPRINTS.keys()))
+        st.session_state.current_blueprint = BLUEPRINTS[rolled_name]
+        st.session_state.current_blueprint["name"] = rolled_name
+        st.session_state.game_logs.append(f"Rolled Blueprint: {rolled_name}!")
         st.rerun()
-
-# STEP 2: SAFETY LICENSE EXAM
-elif st.session_state.step == "Safety":
-    st.header("⚠️ Module 1: The Safety Induction")
-    st.write("Answer all safety questions correctly to enter the workshop floor.")
-    
-    q1 = st.radio("1. What is the standard safety margin (distance) your fingers should keep from a moving blade or machine?", 
-                  ["0mm - live on the edge", "20mm", "50mm", "100mm"])
-    
-    q2 = st.radio("2. If a machine sounds strange or isn't working properly, what should you do?", 
-                  ["Try to fix it yourself with a hammer", "Turn it off immediately and tell the teacher", "Ignore it and keep working", "Leave it running and walk away"])
-    
-    q3 = st.radio("3. What is the correct Personal Protective Equipment (PPE) combination for using the drill press?", 
-                  ["Safety glasses, hair tied back, enclosed shoes", "Loose clothing, apron, sunglasses", "Gloves, safety glasses, scarf", "Enclosed shoes only"])
-
-    if st.button("Submit Safety Assessment", type="primary"):
-        if q1 == "50mm" and q2 == "Turn it off immediately and tell the teacher" and q3 == "Safety glasses, hair tied back, enclosed shoes":
-            st.success("🎉 100% Correct! You've earned your Workshop Safety License.")
-            st.session_state.safety_passed = True
-            st.session_state.step = "Tool Identification"
-            st.rerun()
-        else:
-            st.error("❌ You missed a safety rule! In a real workshop, this causes accidents. Re-read the choices carefully and try again.")
-
-# STEP 3: TOOL IDENTIFICATION
-elif st.session_state.step == "Tool Identification":
-    st.header("🪚 Module 2: Tool Master Match-Up")
-    st.write("Match the woodworking process to the correct Year 8 hand tool.")
-
-    tool_score = 0
-    
-    t1 = st.selectbox("Which tool is designed to accurately mark out right angles (90 degrees) on timber grains?", 
-                      ["", "Tenon Saw", "Try Square", "Chisel", "Marking Gauge"])
-    t2 = st.selectbox("Which saw has a rigid brass or steel back and is best suited for making straight, clean cuts in joints?", 
-                      ["", "Coping Saw", "Crosscut Hand Saw", "Tenon Saw"])
-    t3 = st.selectbox("Which tool features a thin, flexible blade and is used for cutting tight curves and shapes in thin wood?", 
-                      ["", "Jigsaw", "Coping Saw", "Band Saw"])
-
-    if st.button("Verify Tool Selection", type="primary"):
-        if t1 == "Try Square" and t2 == "Tenon Saw" and t3 == "Coping Saw":
-            st.success("🎯 Masterful! You know your tools. You are now cleared to use the manufacturing floor.")
-            st.session_state.step = "Marketplace"
-            st.rerun()
-        else:
-            st.error("❌ Some tools are mismatched. Double check your definitions!")
-
-# STEP 4: THE TYCOON MARKETPLACE & MANUFACTURING
-elif st.session_state.step == "Marketplace":
-    st.header("💰 Module 3: Wood Shop Tycoon")
-    st.write("Welcome to the business simulation! Your goal is to keep making products until you grow your money or test your engineering choices.")
-    
-    # Game Over Conditions
-    if st.session_state.coins <= 0:
-        st.error("😭 Bankrupt! You ran out of timber credits. Better luck next time!")
-        if st.button("Reset Game"):
-            st.session_state.clear()
-            st.rerun()
-        st.stop()
-        
-    if st.session_state.coins >= 300:
-        st.balloons()
-        st.success("🏆 Wood Shop Tycoon Elite! You grew your shop to over 300 credits responsibly. Outstanding business management!")
-        if st.button("Play Again"):
-            st.session_state.clear()
-            st.rerun()
-        st.stop()
-
-    st.subheader("Step 1: Buy Your Timber Material")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("**Radiata Pine (Softwood)**")
-        st.write("Fast growing, sustainable plantation timber. Easy to work with.")
-        st.write("Cost: **20 Credits**")
-        if st.button("Buy Radiata Pine"):
-            if st.session_state.coins >= 20:
-                st.session_state.coins -= 20
-                st.session_state.inventory.append("Pine")
-                st.success("Added Pine to your timber rack!")
-                st.rerun()
-            else:
-                st.error("Not enough credits!")
-
-    with col2:
-        st.markdown("**Tasmanian Oak (Hardwood)**")
-        st.write("Dense, beautiful grain structure. High quality but takes longer to mature.")
-        st.write("Cost: **40 Credits**")
-        if st.button("Buy Tasmanian Oak"):
-            if st.session_state.coins >= 40:
-                st.session_state.coins -= 40
-                st.session_state.inventory.append("Tas Oak")
-                st.success("Added Tas Oak to your timber rack!")
-                st.rerun()
-            else:
-                st.error("Not enough credits!")
-
-    st.markdown("---")
-    
-    # Manufacturing Section
-    st.subheader("Step 2: Manufacture a Project")
-    if not st.session_state.inventory:
-        st.warning("⚠️ You need to buy raw timber material from the marketplace above before starting a build!")
     else:
-        chosen_material = st.selectbox("Select material to build with:", st.session_state.inventory)
-        project_type = st.radio("What project do you want to build?", ["Simple Coaster", "Premium Pencil Box"])
-        
-        st.markdown("**Select your Manufacturing Steps:**")
-        step_1_tool = st.selectbox("1. Squaring and Marking material edge:", ["", "Hand", "Try Square & Pencil", "Chisel"])
-        step_2_tool = st.selectbox("2. Cutting pieces to size:", ["", "Tenon Saw", "Coping Saw", "Hammer"])
-        step_3_finish = st.selectbox("3. Surface Finish Technique:", ["", "Leave it rough", "Sandpaper (120 to 240 grit) then Linseed Oil", "Spray Paint without sanding"])
+        st.error("Not enough cash to buy a blueprint!")
 
-        if st.button("Hammer & Build!", type="primary"):
-            # Check correctness of chosen methods
-            if step_1_tool == "Try Square & Pencil" and step_2_tool == "Tenon Saw" and step_3_finish == "Sandpaper (120 to 240 grit) then Linseed Oil":
+# Display current active build details
+if st.session_state.session_state.current_blueprint:
+    bp = st.session_state.current_blueprint
+    st.info(f"**Active Project:** {bp['name']} | **Requires:** {bp['wood']} (Costs {bp['cost']} to prep) | **Potential Payout:** {bp['payout']} 💰")
+else:
+    st.warning("No blueprint active. Pull the lever above!")
+
+st.write("---")
+
+# --- INTERACTIVE MANUFACTURING SECTION ---
+st.header("🛠️ 2. The Interactive Workshop Floor")
+
+if not st.session_state.current_blueprint:
+    st.write("Waiting for a design contract...")
+else:
+    bp = st.session_state.current_blueprint
+    
+    st.write(f"### Crafting Steps for: {bp['name']}")
+    
+    # User Input 1: Risk Assessment Slider
+    risk_level = st.select_slider(
+        "Select your Crafting Speed / Risk Profile:",
+        options=["Careful & Slow", "Standard Precision", "Rushed / Fast-Track"],
+        value="Standard Precision"
+    )
+    
+    # User Input 2: Tool choice strategy
+    tool_choice = st.radio(
+        "Choose your primary shaping tool for this build:",
+        ["Traditional Hand Tools (High accuracy, low speed)", "Power Machinery (High speed, higher risk of splintering)"]
+    )
+    
+    # The Action Button
+    if st.button("🔥 START THE BUILD (Roll Luck Mechanics)", type="primary"):
+        # Deduct physical wood material cost
+        if st.session_state.coins < bp['cost']:
+            st.error("You don't have enough money left to buy the physical wood for this project! Roll an easier blueprint.")
+        else:
+            st.session_state.coins -= bp['cost']
+            
+            # Base Success Calculations base on inputs
+            success_chance = 75
+            if risk_level == "Careful & Slow":
+                success_chance += 15
+            elif risk_level == "Rushed / Fast-Track":
+                success_chance -= 30
                 
-                # Base valuation algorithm
-                base_value = 50 if project_type == "Simple Coaster" else 95
-                
-                # Boost if hardwood premium quality used
-                if chosen_material == "Tas Oak":
-                    base_value += 35
-                    quality_mod = "Premium Hardwood Finish"
-                else:
-                    quality_mod = "Standard Softwood Build"
-                
-                # Payout 
-                st.session_state.coins += base_value
-                st.session_state.inventory.remove(chosen_material)
-                
-                st.balloons()
-                st.success(f"📦 Successfully manufactured! Sold your {project_type} ({quality_mod}) for **{base_value} Credits**!")
-                st.rerun()
+            if "Hand Tools" in tool_choice and bp['difficulty'] in ["Hard", "Expert"]:
+                success_chance -= 10 # Hand tools on hard wood is tough!
+            
+            # Execute Chance Roll
+            luck_roll = random.randint(1, 100)
+            
+            # Trigger Random Workshop Disaster or Boon (1 in 4 chance)
+            disaster_payout_modifier = 0
+            if random.random() < 0.30:
+                events = [
+                    ("🪓 Knot in Wood!", -20, "Hit a hidden knot structural defect! Value reduced."),
+                    ("🧯 Perfect Joinery!", 30, "The teacher loved your mortise & tenon joints! Bonus payout!"),
+                    ("🩹 Minor Splinter!", -10, "Ouch! Lost time finding the first aid kit."),
+                    ("♻️ Leftover Scraps!", 15, "Sanded efficiently and saved material. Money back!")
+                ]
+                ev_icon, ev_mod, ev_desc = random.choice(events)
+                disaster_payout_modifier = ev_mod
+                st.session_state.game_logs.append(f"EVENT: {ev_icon} {ev_desc} ({' +' if ev_mod > 0 else ''}{ev_mod} Credits)")
+
+            # Determine Build Outcome
+            if luck_roll <= success_chance:
+                # Success!
+                final_earnings = bp['payout'] + disaster_payout_modifier
+                st.session_state.coins += final_earnings
+                st.session_state.xp += 15
+                st.session_state.game_logs.append(f"SUCCESS: Beautifully completed {bp['name']}! Earned {final_earnings} credits.")
             else:
-                # Poor processing results in lost investment or reduced valuation
-                st.session_state.inventory.remove(chosen_material)
-                penalty = 10
-                st.session_state.coins += penalty
-                st.error(f"❌ Manufacturing Faults! You skipped proper procedures (e.g., didn't use a Try Square, rough finish, or poor tool choices). The project cracked and only sold as firewood scrap for **{penalty} Credits**.")
-                st.rerun()
+                # Failure / Ruined project
+                scrap_value = int(bp['cost'] * 0.3)
+                st.session_state.coins += scrap_value
+                st.session_state.game_logs.append(f"FAIL: Your hand slipped or the machine tore the wood grain. {bp['name']} ruined! Sold as firewood scrap for {scrap_value} credits.")
+            
+            # Clear project queue for next contract
+            st.session_state.current_blueprint = None
+            st.rerun()
+
+st.write("---")
+
+# --- GAME LOGS CONTAINER ---
+st.subheader("📟 Workshop Live Telemetry Feed")
+# Reverse logs to show newest at top
+logs_html = "<br>".join([f"&gt; {log}" for log in reversed(st.session_state.game_logs)])
+st.markdown(f"<div class='log-box'>{logs_html}</div>", unsafe_allow_html=True)
