@@ -54,24 +54,38 @@ html_elements = """
 <style>
     body {
         margin: 0; 
-        /* Generous top padding to completely clear any container cutoffs */
-        padding: 130px 0 0 0; 
+        /* Generous top padding drops the initial content row lower to maximize tooltip headroom */
+        padding: 50px 0 0 0; 
         background-color: #0E1117;
         background-image: linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
                           linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
         background-size: 24px 24px;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        overflow: visible; /* Allows dropdown elements to spill gracefully */
+        overflow: visible;
     }
     .portfolio-title {
         text-align: center;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        font-size: 22px;
+        font-size: 24px;
         font-weight: 600;
         color: #FFFFFF;
         letter-spacing: -0.5px;
-        margin-top: -95px; /* Pulls the title header up into the top padding zone */
-        margin-bottom: 25px; 
+        margin-top: 0px;
+        margin-bottom: 12px; 
+    }
+    .portfolio-intro {
+        text-align: center;
+        max-width: 800px;
+        margin: 0 auto 50px auto; /* Generates a clean visual gap before the showcase row */
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        font-size: 13px;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.65); /* Translucent sleek layout styling */
+        letter-spacing: 0.1px;
+    }
+    .portfolio-intro span {
+        color: #F4D068;
+        font-weight: 600;
     }
     .casement-grid {
         display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px;
@@ -107,10 +121,10 @@ html_elements = """
     .quantity-badge { font-size: 12px; font-weight: 700; color: #F4D068; margin-bottom: 3px; min-height: 15px; }
     .label-badge { font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    /* Top-Down Absolute Positioning Strategy to prevent Frame Clipping */
+    /* Absolute Positioning Core Strategy */
     .node-tooltip {
         visibility: hidden; opacity: 0; position: absolute;
-        top: -115px; bottom: auto; left: 50%; transform: translateX(-50%);
+        top: -120px; bottom: auto; left: 50%; transform: translateX(-50%);
         width: 180px; background: #161925; border: 1px solid #282E48;
         border-radius: 8px; padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.6);
         z-index: 99999; transition: opacity 0.12s ease-in-out; pointer-events: none;
@@ -127,7 +141,7 @@ html_elements = """
 
     .dashboard-row {
         display: flex; justify-content: center; gap: 20px;
-        margin-top: 35px; padding: 0 15px;
+        margin-top: 45px; padding: 0 15px;
     }
     .stat-card {
         background: #161925; border: 1px solid #23273A; border-radius: 6px;
@@ -142,6 +156,11 @@ html_elements = """
 </style>
 
 <div class="portfolio-title">Timber Medallion Portfolio</div>
+
+<div class="portfolio-intro">
+    Welcome to your master dashboard tracking the curation of elite wood tokens. Medallions can be acquired by processing rare lumber loads, unlocking milestones, and participating in limited trade events. Each unique medallion tier scales across varying degrees of rarity, marketplace values, and highly restricted circulating supplies—culminating with the ultra-mythic <span>Agarwood Medallion</span>, maintaining an absolute <span>1-to-1 available stock</span> worldwide.
+</div>
+
 <div class="casement-grid">
 """
 
@@ -200,5 +219,5 @@ html_elements += f"""
 </div>
 """
 
-# Expanded layout height parameter to allow ample space for animations and cards
-st.components.v1.html(html_elements, height=420, scrolling=False)
+# Upgraded total height constraint to 490 to accommodate the intro body text perfectly
+st.components.v1.html(html_elements, height=490, scrolling=False)
