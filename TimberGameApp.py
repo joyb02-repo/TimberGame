@@ -95,7 +95,7 @@ def get_image_base64(path):
 # --- CONTEMPORARY UI STYLING & RESET ---
 st.set_page_config(page_title="Apprentice Studio Hub", page_icon="🪵", layout="wide")
 
-# Global CSS Injector
+# Global CSS Injector (Kept streamlined and lightweight)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
@@ -116,110 +116,6 @@ st.markdown("""
         color: #A0AEC0;
         font-size: 1rem;
         margin-bottom: 25px;
-    }
-    
-    .medallion-row-container {
-        display: flex;
-        flex-wrap: nowrap;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        width: 100%;
-        background: #0E1017;
-        padding: 20px;
-        border-radius: 14px;
-        border: 1px solid #1E2235;
-        margin-bottom: 30px;
-        box-sizing: border-box;
-    }
-    
-    .badge-item-slot {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        flex: 1;
-        position: relative;
-    }
-    
-    .img-wrapper-frame {
-        width: 60px;
-        height: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .img-wrapper-frame img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-    }
-    
-    .lock-placeholder-frame {
-        width: 55px;
-        height: 55px;
-        border-radius: 50%;
-        border: 2px dashed #23273A;
-        background: #121522;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #383F58;
-        font-size: 0.95rem;
-    }
-    
-    .hover-spec-card {
-        visibility: hidden;
-        opacity: 0;
-        position: absolute;
-        bottom: 130%;
-        left: 50%;
-        transform: translateX(-50%) translateY(6px);
-        width: 190px;
-        background: #161926;
-        border: 1px solid #2C324A;
-        border-radius: 10px;
-        padding: 12px;
-        text-align: left;
-        box-shadow: 0 12px 30px rgba(0,0,0,0.6);
-        z-index: 100000;
-        transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
-        pointer-events: none;
-    }
-    
-    .badge-item-slot:hover .hover-spec-card {
-        visibility: visible;
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
-    
-    .spec-card-line {
-        font-size: 0.78rem;
-        color: #E2E8F0;
-        margin-bottom: 5px;
-        line-height: 1.3;
-    }
-    
-    .spec-card-line span {
-        font-weight: 700;
-        color: #F4D068;
-    }
-    
-    .lbl-text-under {
-        font-size: 0.68rem;
-        font-weight: 700;
-        color: #5C6479;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        margin-top: 8px;
-    }
-    
-    .qty-text-under {
-        font-size: 0.75rem;
-        font-weight: bold;
-        color: #F4D068;
-        margin-top: 5px;
     }
     
     .panel-box {
@@ -422,14 +318,14 @@ with col_logout:
         st.rerun()
 
 # ------------------------------------------------------------
-# 🏅 FIXED SINGLE-BLOCK ENGINE (No layout leakage/code strings)
+# 🏅 REDESIGNED NATIVE COMPONENT GRID FRAMEWORK
 # ------------------------------------------------------------
 st.markdown("<p style='font-size: 0.85rem; font-weight: 600; color: #A0AEC0; margin-bottom: 14px; letter-spacing:0.5px;'>MEDALLION SHOWCASE CASEMENT</p>", unsafe_allow_html=True)
 
-# Generate inner layout as a clean text object list to keep strings distinct from processing loops
-row_items = []
+# Build a clean row container using 12 native Streamlit layout columns
+medallion_slots = st.columns(12)
 
-for wood_name in MEDALLION_COLUMNS:
+for index, wood_name in enumerate(MEDALLION_COLUMNS):
     display_label = wood_name[:5].upper()
     owned_count = int(user.get(wood_name, 0))
     
@@ -446,47 +342,111 @@ for wood_name in MEDALLION_COLUMNS:
     img_filename = f"assets/{wood_name.lower()}.png"
     img_base64 = get_image_base64(img_filename)
     
-    tooltip_html = f"""
-        <div class='hover-spec-card'>
-            <div class='spec-card-line'>💎 Name: <span>{wood_name}</span></div>
-            <div class='spec-card-line'>🏷️ Rarity: <span>{rarity_val}</span></div>
-            <div class='spec-card-line'>🎲 Prob: <span>{prob_val}</span></div>
-            <div class='spec-card-line'>📦 Avail: <span>{adjusted_availability} left</span></div>
-            <div class='spec-card-line'>💰 Value: <span>{val_cost}</span></div>
+    # Clean, isolated HTML/CSS Tooltip wrapper explicitly for the HTML component iframe
+    micro_tooltip_html = f"""
+    <style>
+        .wrapper {{
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            width: 100%;
+            height: 100px;
+            cursor: pointer;
+        }}
+        .content-frame {{
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }}
+        .content-frame img {{
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }}
+        .lock-placeholder {{
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px dashed #23273A;
+            background: #121522;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #383F58;
+            font-size: 14px;
+        }}
+        .tooltip {{
+            visibility: hidden;
+            opacity: 0;
+            position: fixed;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            background: #161926;
+            border: 1px solid #2C324A;
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+            z-index: 999;
+            transition: opacity 0.15s ease;
+        }}
+        .wrapper:hover .tooltip {{
+            visibility: visible;
+            opacity: 1;
+        }}
+        .line {{
+            font-size: 11px;
+            color: #E2E8F0;
+            margin-bottom: 3px;
+        }}
+        .line span {{
+            font-weight: bold;
+            color: #F4D068;
+        }}
+        .qty {{
+            font-size: 11px;
+            font-weight: bold;
+            color: #F4D068;
+            margin-top: 4px;
+            text-align: center;
+        }}
+        .lbl {{
+            font-size: 10px;
+            font-weight: 700;
+            color: #5C6479;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+            text-align: center;
+        }}
+    </style>
+    <div class="wrapper">
+        <div class="tooltip">
+            <div class="line">💎 Name: <span>{wood_name}</span></div>
+            <div class="line">🏷️ Rarity: <span>{rarity_val}</span></div>
+            <div class="line">🎲 Prob: <span>{prob_val}</span></div>
+            <div class="line">📦 Avail: <span>{adjusted_availability} left</span></div>
+            <div class="line">💰 Value: <span>{val_cost}</span></div>
         </div>
+        <div class="content-frame">
+            {"<img src='data:image/png;base64," + img_base64 + "' />" if (owned_count > 0 and img_base64) else "<div class='lock-placeholder'>🔒</div>"}
+        </div>
+        <div class="qty" {"style='visibility:hidden;'" if owned_count <= 0 else ""}>x{owned_count}</div>
+        <div class="lbl">{display_label}</div>
+    </div>
     """
     
-    if owned_count > 0 and img_base64:
-        item_html = f"""
-        <div class='badge-item-slot'>
-            {tooltip_html}
-            <div class='img-wrapper-frame'>
-                <img src='data:image/png;base64,{img_base64}' />
-            </div>
-            <div class='qty-text-under'>x{owned_count}</div>
-            <div class='lbl-text-under'>{display_label}</div>
-        </div>
-        """
-    else:
-        item_html = f"""
-        <div class='badge-item-slot'>
-            {tooltip_html}
-            <div class='img-wrapper-frame'>
-                <div class='lock-placeholder-frame'>🔒</div>
-            </div>
-            <div class='qty-text-under' style='visibility: hidden;'>x0</div>
-            <div class='lbl-text-under'>{display_label}</div>
-        </div>
-        """
-    row_items.append(item_html)
+    # Target each sub-column safely without using string manipulation on st.markdown
+    with medallion_slots[index]:
+        st.components.v1.html(micro_tooltip_html, height=115, scrolling=False)
 
-# Combined into a single plain text assignment block to fix interpretation glitches
-compiled_row_html = f"""
-<div class='medallion-row-container'>
-    {"".join(row_items)}
-</div>
-"""
-st.markdown(compiled_row_html, unsafe_allow_html=True)
+st.write("")
 
 # --- REAL-TIME HIGHER LEVEL METRIC BANNER ---
 col_met1, col_met2 = st.columns(2)
@@ -660,7 +620,7 @@ with panel_right:
             
     with col_b2:
         pine_meta = live_metadata.get("Pine", {"Availability": "0"})
-        pine_avail = int(pine_meta.get("Pine", 0) if "Pine" in live_metadata else pine_meta.get("Availability", 0)) - int(user.get("Pine", 0))
+        pine_avail = int(pine_meta.get("Availability", 0)) - int(user.get("Pine", 0))
         st.markdown("<div style='font-size:0.8rem; font-weight:600; color:#CBD5E0;'>Pine Lumber</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='font-size:0.75rem; color:#EF4444; margin-bottom:6px;'>Cost: $50 | {max(0, pine_avail)} left</div>", unsafe_allow_html=True)
         
@@ -679,4 +639,3 @@ with panel_right:
             st.rerun()
             
     st.markdown("</div>", unsafe_allow_html=True)
-    
