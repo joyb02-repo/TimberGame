@@ -40,7 +40,7 @@ def get_image_base64(path):
 live_data, summary_value, summary_collected = fetch_all_sheet_data()
 
 mock_user = {
-    "Spruce": 6, "Pine": 2, "Meranti": 0, "Balsa": 0, "Oak": 0, "Maple": 0,
+    "Spruce": 6, "Pine": 2, "Meranti", 0, "Balsa", 0, "Oak", 0, "Maple", 0,
     "Walnut": 0, "Cherry": 0, "Mahogany": 2, "Ebony": 0, "Rosewood": 1, "Agarwood": 0
 }
 
@@ -48,20 +48,20 @@ if not summary_value.strip().startswith("$") and "Loading" not in summary_value:
     summary_value = f"${summary_value.strip()}"
 
 # ====================================================================
-# UNIFIED GRID LAYOUT WITH HEADROOM OFFSETS & SCALE ANIMATIONS
+# UNIFIED GRID LAYOUT WITH ADVANCED OVERFLOW SAFETY WINDOWS
 # ====================================================================
 html_elements = """
 <style>
     body {
         margin: 0; 
-        /* Added top padding to shift everything safely below the top iframe edge */
-        padding: 12px 0 0 0; 
+        /* Generous top padding to completely clear any container cutoffs */
+        padding: 130px 0 0 0; 
         background-color: #0E1117;
         background-image: linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
                           linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
         background-size: 24px 24px;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        overflow: hidden;
+        overflow: visible; /* Allows dropdown elements to spill gracefully */
     }
     .portfolio-title {
         text-align: center;
@@ -70,12 +70,11 @@ html_elements = """
         font-weight: 600;
         color: #FFFFFF;
         letter-spacing: -0.5px;
-        margin-top: 15px;
-        margin-bottom: -5px; /* Moderated gap spacing to lift grid cleanly */
+        margin-top: -95px; /* Pulls the title header up into the top padding zone */
+        margin-bottom: 25px; 
     }
     .casement-grid {
         display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px;
-        padding-top: 45px; /* Sized layout header headroom to safeguard popup tooltips */
         padding-left: 15px; padding-right: 15px;
     }
     .grid-node {
@@ -87,10 +86,10 @@ html_elements = """
         align-items: center; justify-content: center; margin-bottom: 8px;
     }
     
-    /* Animation Hooks for Active & Locked Nodes */
+    /* Animation Framework for Hover Scales */
     .image-frame img, .lock-node { 
         width: 100%; height: 100%; object-fit: contain;
-        transition: transform 0.15s ease-in-out; /* Smooth transition framework */
+        transition: transform 0.15s ease-in-out;
     }
     .lock-node {
         width: 52px; height: 52px; border-radius: 50%;
@@ -99,7 +98,7 @@ html_elements = """
         color: #3D4563; font-size: 13px;
     }
     
-    /* Hover scale effect triggers a direct 15% structural magnification */
+    /* Applies the 15% magnification on hover */
     .grid-node:hover .image-frame img,
     .grid-node:hover .lock-node {
         transform: scale(1.15);
@@ -108,16 +107,17 @@ html_elements = """
     .quantity-badge { font-size: 12px; font-weight: 700; color: #F4D068; margin-bottom: 3px; min-height: 15px; }
     .label-badge { font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    /* Absolute Floating Tooltip Card Layout */
+    /* Top-Down Absolute Positioning Strategy to prevent Frame Clipping */
     .node-tooltip {
         visibility: hidden; opacity: 0; position: absolute;
-        bottom: 110px; left: 50%; transform: translateX(-50%);
+        top: -115px; bottom: auto; left: 50%; transform: translateX(-50%);
         width: 180px; background: #161925; border: 1px solid #282E48;
         border-radius: 8px; padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.6);
         z-index: 99999; transition: opacity 0.12s ease-in-out; pointer-events: none;
     }
     .grid-node:hover .node-tooltip { visibility: visible; opacity: 1; }
     
+    /* Horizontal boundary shifts for the edge elements */
     .grid-node:first-child .node-tooltip { left: 0; transform: translateX(0); }
     .grid-node:last-child .node-tooltip { left: auto; right: 0; transform: translateX(0); }
     
@@ -127,7 +127,7 @@ html_elements = """
 
     .dashboard-row {
         display: flex; justify-content: center; gap: 20px;
-        margin-top: 25px; padding: 0 15px;
+        margin-top: 35px; padding: 0 15px;
     }
     .stat-card {
         background: #161925; border: 1px solid #23273A; border-radius: 6px;
@@ -200,5 +200,5 @@ html_elements += f"""
 </div>
 """
 
-# Adjusted component ceiling properties to account for shifted down positions
-st.components.v1.html(html_elements, height=315, scrolling=False)
+# Expanded layout height parameter to allow ample space for animations and cards
+st.components.v1.html(html_elements, height=420, scrolling=False)
