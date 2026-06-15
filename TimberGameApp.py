@@ -95,6 +95,7 @@ def get_image_base64(path):
 # --- CONTEMPORARY UI STYLING & RESET ---
 st.set_page_config(page_title="Apprentice Studio Hub", page_icon="🪵", layout="wide")
 
+# Global CSS Injector
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
@@ -117,116 +118,108 @@ st.markdown("""
         margin-bottom: 25px;
     }
     
-    /* Custom Flex Layout Container for Medallion Row */
-    .medallion-flex-container {
+    .medallion-row-container {
         display: flex;
         flex-wrap: nowrap;
         justify-content: space-between;
         align-items: center;
-        gap: 8px;
+        gap: 12px;
         width: 100%;
         background: #0E1017;
-        padding: 16px;
-        border-radius: 12px;
+        padding: 20px;
+        border-radius: 14px;
         border: 1px solid #1E2235;
-        margin-bottom: 25px;
+        margin-bottom: 30px;
         box-sizing: border-box;
     }
     
-    .slot-container {
+    .badge-item-slot {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         flex: 1;
-        min-width: 0;
-        text-align: center;
         position: relative;
     }
     
-    .medallion-frame-fixed {
-        width: 55px; 
-        height: 55px;
+    .img-wrapper-frame {
+        width: 60px;
+        height: 60px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 auto;
     }
-
-    .medallion-img-render {
+    
+    .img-wrapper-frame img {
         width: 100%;
         height: 100%;
         object-fit: contain;
     }
     
-    .circle-placeholder-lock {
-        width: 50px; 
-        height: 50px;
+    .lock-placeholder-frame {
+        width: 55px;
+        height: 55px;
         border-radius: 50%;
-        border: 2px dashed #212435;
-        background: #11131C;
+        border: 2px dashed #23273A;
+        background: #121522;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #31364C;
-        font-size: 0.9rem;
-        box-sizing: border-box;
+        color: #383F58;
+        font-size: 0.95rem;
     }
     
-    .tooltip-card {
+    .hover-spec-card {
         visibility: hidden;
         opacity: 0;
         position: absolute;
-        bottom: 125%; 
+        bottom: 130%;
         left: 50%;
-        transform: translateX(-50%) translateY(5px);
-        width: 180px;
-        background: #171A26;
-        border: 1px solid #2E344D;
+        transform: translateX(-50%) translateY(6px);
+        width: 190px;
+        background: #161926;
+        border: 1px solid #2C324A;
         border-radius: 10px;
         padding: 12px;
         text-align: left;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        z-index: 999999 !important;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+        z-index: 100000;
         transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
         pointer-events: none;
     }
     
-    .slot-container:hover .tooltip-card {
+    .badge-item-slot:hover .hover-spec-card {
         visibility: visible;
         opacity: 1;
         transform: translateX(-50%) translateY(0);
     }
     
-    .tip-line {
+    .spec-card-line {
         font-size: 0.78rem;
         color: #E2E8F0;
-        margin-bottom: 4px;
+        margin-bottom: 5px;
         line-height: 1.3;
     }
-    .tip-line span {
+    
+    .spec-card-line span {
         font-weight: 700;
         color: #F4D068;
     }
     
-    .badge-label-title {
-        font-size: 0.65rem;
+    .lbl-text-under {
+        font-size: 0.68rem;
         font-weight: 700;
         color: #5C6479;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-top: 6px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        width: 100%;
+        letter-spacing: 0.6px;
+        margin-top: 8px;
     }
-
-    .qty-indicator-tight {
-        font-size: 0.75rem; 
-        font-weight: bold; 
-        color: #F4D068; 
-        margin-top: 4px;
+    
+    .qty-text-under {
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: #F4D068;
+        margin-top: 5px;
     }
     
     .panel-box {
@@ -235,7 +228,6 @@ st.markdown("""
         border-radius: 16px;
         padding: 24px;
         margin-bottom: 20px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     }
     
     .panel-title {
@@ -430,12 +422,12 @@ with col_logout:
         st.rerun()
 
 # ------------------------------------------------------------
-# 🏅 FIXED SINGLE-BLOCK HTML/CSS FLEXBOX ENGINE
+# 🏅 FIXED SINGLE-BLOCK ENGINE (No layout leakage/code strings)
 # ------------------------------------------------------------
 st.markdown("<p style='font-size: 0.85rem; font-weight: 600; color: #A0AEC0; margin-bottom: 14px; letter-spacing:0.5px;'>MEDALLION SHOWCASE CASEMENT</p>", unsafe_allow_html=True)
 
-# Build items string completely before dumping into Streamlit
-flex_items_html = ""
+# Generate inner layout as a clean text object list to keep strings distinct from processing loops
+row_items = []
 
 for wood_name in MEDALLION_COLUMNS:
     display_label = wood_name[:5].upper()
@@ -446,53 +438,55 @@ for wood_name in MEDALLION_COLUMNS:
     prob_raw = str(meta.get("Probability", "10"))
     prob_val = prob_raw if "%" in prob_raw else f"{prob_raw}%"
     
-    # DEDUCTION: Total Sheet Stock availability dynamic calculation logic minus current owned count
-    total_sheet_stock = int(meta.get("Availability", "0"))
-    adjusted_availability = max(0, total_sheet_stock - owned_count)
-
+    # DEDUCTION ENGINE: Live sheet stock value minus amount owned by portfolio
+    sheet_stock = int(meta.get("Availability", "0"))
+    adjusted_availability = max(0, sheet_stock - owned_count)
     val_cost = str(meta.get("Value", "$0"))
+    
     img_filename = f"assets/{wood_name.lower()}.png"
     img_base64 = get_image_base64(img_filename)
     
     tooltip_html = f"""
-    <div class='tooltip-card'>
-        <div class='tip-line'>💎 Name: <span>{wood_name}</span></div>
-        <div class='tip-line'>🏷️ Rarity: <span>{rarity_val}</span></div>
-        <div class='tip-line'>🎲 Prob: <span>{prob_val}</span></div>
-        <div class='tip-line'>📦 Avail: <span>{adjusted_availability} left</span></div>
-        <div class='tip-line'>💰 Value: <span>{val_cost}</span></div>
-    </div>
+        <div class='hover-spec-card'>
+            <div class='spec-card-line'>💎 Name: <span>{wood_name}</span></div>
+            <div class='spec-card-line'>🏷️ Rarity: <span>{rarity_val}</span></div>
+            <div class='spec-card-line'>🎲 Prob: <span>{prob_val}</span></div>
+            <div class='spec-card-line'>📦 Avail: <span>{adjusted_availability} left</span></div>
+            <div class='spec-card-line'>💰 Value: <span>{val_cost}</span></div>
+        </div>
     """
     
     if owned_count > 0 and img_base64:
-        flex_items_html += f"""
-        <div class='slot-container'>
+        item_html = f"""
+        <div class='badge-item-slot'>
             {tooltip_html}
-            <div class='medallion-frame-fixed'>
-                <img class='medallion-img-render' src='data:image/png;base64,{img_base64}' />
+            <div class='img-wrapper-frame'>
+                <img src='data:image/png;base64,{img_base64}' />
             </div>
-            <div class='qty-indicator-tight'>x{owned_count}</div>
-            <div class='badge-label-title'>{display_label}</div>
+            <div class='qty-text-under'>x{owned_count}</div>
+            <div class='lbl-text-under'>{display_label}</div>
         </div>
         """
     else:
-        flex_items_html += f"""
-        <div class='slot-container'>
+        item_html = f"""
+        <div class='badge-item-slot'>
             {tooltip_html}
-            <div class='medallion-frame-fixed'>
-                <div class='circle-placeholder-lock'>🔒</div>
+            <div class='img-wrapper-frame'>
+                <div class='lock-placeholder-frame'>🔒</div>
             </div>
-            <div class='qty-indicator-tight' style='visibility: hidden;'>x0</div>
-            <div class='badge-label-title'>{display_label}</div>
+            <div class='qty-text-under' style='visibility: hidden;'>x0</div>
+            <div class='lbl-text-under'>{display_label}</div>
         </div>
         """
+    row_items.append(item_html)
 
-# FIX: Outputted inside a single outer container completely external to Streamlit columns
-st.markdown(f"""
-<div class='medallion-flex-container'>
-    {flex_items_html}
+# Combined into a single plain text assignment block to fix interpretation glitches
+compiled_row_html = f"""
+<div class='medallion-row-container'>
+    {"".join(row_items)}
 </div>
-""", unsafe_allow_html=True)
+"""
+st.markdown(compiled_row_html, unsafe_allow_html=True)
 
 # --- REAL-TIME HIGHER LEVEL METRIC BANNER ---
 col_met1, col_met2 = st.columns(2)
@@ -549,7 +543,6 @@ if st.session_state.get('reward_pending', False):
             final_award = random.choices(med_names, weights=med_weights, k=1)[0]
             target_sheet_row = next(m for m in valid_pool if m.get("Medallion") == final_award)
             
-            # Save decremented value out into the sheet row database column tracker
             new_availability = max(0, int(target_sheet_row.get("Availability", 1)) - 1)
             target_sheet_row["Availability"] = new_availability
             
@@ -575,7 +568,7 @@ panel_left, panel_center, panel_right = st.columns(3)
 with panel_left:
     st.markdown("<div class='panel-box'>", unsafe_allow_html=True)
     st.markdown("<div class='panel-title'>📋 Open Work Contracts</div>", unsafe_allow_html=True)
-    st.markdown("<div class='panel-desc'>Accepting client orders spins up a precision components material assembly check. Complete it to secure the cash ledger.</div>", unsafe_allow_html=True)
+    st.markdown("<div class='panel-desc'>Accepting client orders spins up a material check. Complete it to secure the cash ledger.</div>", unsafe_allow_html=True)
     
     for idx, job in enumerate(st.session_state.active_jobs):
         st.markdown(f"""
@@ -632,7 +625,7 @@ with panel_right:
             user[wager_med] = int(user[wager_med]) + 2
             st.success(f"🎯 Perfect cut! Doubled into +2 {wager_med} Medallions!")
         else:
-            st.error("💥 Splinter fracture! The asset broke during assembly processing.")
+            st.error("💥 Splinter fracture! The asset broke during processing.")
             
         with st.spinner("Saving transaction metrics..."):
             sync_cloud_data("saveUser", user)
@@ -667,7 +660,7 @@ with panel_right:
             
     with col_b2:
         pine_meta = live_metadata.get("Pine", {"Availability": "0"})
-        pine_avail = int(pine_meta.get("Availability", 0)) - int(user.get("Pine", 0))
+        pine_avail = int(pine_meta.get("Pine", 0) if "Pine" in live_metadata else pine_meta.get("Availability", 0)) - int(user.get("Pine", 0))
         st.markdown("<div style='font-size:0.8rem; font-weight:600; color:#CBD5E0;'>Pine Lumber</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='font-size:0.75rem; color:#EF4444; margin-bottom:6px;'>Cost: $50 | {max(0, pine_avail)} left</div>", unsafe_allow_html=True)
         
