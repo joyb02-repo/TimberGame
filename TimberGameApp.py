@@ -79,7 +79,6 @@ elif st.session_state.step == "Safety":
             st.success("🎉 100% Correct! You've earned your Workshop Safety License.")
             st.session_state.safety_passed = True
             st.session_state.step = "Tool Identification"
-            st.loading()
             st.rerun()
         else:
             st.error("❌ You missed a safety rule! In a real workshop, this causes accidents. Re-read the choices carefully and try again.")
