@@ -22,7 +22,7 @@ def sync_cloud_data(action_type, payload_data=None):
         st.error(f"Database Connection Error: {str(e)}")
     return {"status": "error", "users": [], "medallions": []}
 
-# --- RECOVERY SESSION CONTROLLER STATE ---
+# --- TRACK SESSION GLOBAL VARIABLES ---
 if 'user_authenticated' not in st.session_state:
     st.session_state.user_authenticated = False
 if 'current_user' not in st.session_state:
@@ -54,7 +54,6 @@ if 'pending_job_payout' not in st.session_state:
     st.session_state.pending_job_payout = 0
 
 def init_memory_game(payout_value):
-    # 4 distinct wood pairs (8 cards total)
     base_cards = ["🪚 Saw", "🔨 Hammer", "📐 Square", "🪵 Timber"] * 2
     random.shuffle(base_cards)
     st.session_state.memory_cards = base_cards
@@ -63,181 +62,270 @@ def init_memory_game(payout_value):
     st.session_state.pending_job_payout = payout_value
     st.session_state.game_mode = "MemoryGame"
 
-# --- APPLICATION THEME STYLING ---
-st.set_page_config(page_title="Apprentice Control Hub", page_icon="🪵", layout="wide")
+# --- APPLICATION PRESETS & CONTEMPORARY UI STYLING ---
+st.set_page_config(page_title="Apprentice Studio Hub", page_icon="🪵", layout="wide")
+
 st.markdown("""
     <style>
-    .main-header { font-family: 'Helvetica Neue', sans-serif; font-weight: 800; font-size: 2.3rem; color: #f4d068; }
-    .card { background: #1a1c24; border: 1px solid #2d313f; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 15px; }
-    .metric-val { font-size: 1.8rem; font-weight: bold; margin-top: 5px; }
-    .game-card { background: #1e212b; border: 2px solid #3a3f50; border-radius: 8px; padding: 20px; text-align: center; }
-    .slot-vacant { background: #16171d; border: 2px dashed #3a3f50; padding: 20px; border-radius: 10px; text-align: center; color: #58617a; }
-    .slot-earned { background: linear-gradient(135deg, #2b2318, #1a140e); border: 2px solid #f4d068; padding: 20px; border-radius: 10px; text-align: center; color: #f4d068; font-weight: bold; }
+    /* Global Typography Reset & Clean Color Mapping */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, sans-serif;
+    }
+    
+    /* Top Row Metric Cards styling */
+    .dashboard-header {
+        font-weight: 800; 
+        font-size: 2.6rem; 
+        color: #FFFFFF; 
+        letter-spacing: -1.5px;
+        margin-bottom: 5px;
+    }
+    
+    .dashboard-subtitle {
+        color: #A0AEC0;
+        font-size: 1rem;
+        margin-bottom: 25px;
+    }
+    
+    .panel-box {
+        background: #12141C;
+        border: 1px solid #1E2235;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .panel-title {
+        font-weight: 600;
+        font-size: 1.25rem;
+        color: #F4D068;
+        margin-bottom: 12px;
+        letter-spacing: -0.5px;
+    }
+    
+    .panel-desc {
+        color: #718096;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 20px;
+    }
+    
+    /* Job Card Styling */
+    .job-item {
+        background: #1A1D2C;
+        border: 1px solid #2D3250;
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .job-title {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #E2E8F0;
+        margin-bottom: 6px;
+    }
+    
+    /* Showroom Slots */
+    .showroom-preview-row {
+        background: #161925;
+        border: 1px solid #23283D;
+        padding: 10px 14px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9rem;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# PHASE 1: PIN PORTAL ROUTER
+# PHASE 1: LOGIN / SIGNUP PORTAL (CLEAN EDITIONS)
 # ==========================================
 if not st.session_state.user_authenticated:
-    st.markdown("<div class='main-header'>🪵 Apprentice Workshop Gate</div>", unsafe_allow_html=True)
-    st.write("Enter your security PIN or create a fresh apprentice contract portfolio.")
+    st.markdown("<div class='dashboard-header' style='text-align: center; margin-top: 40px;'>🪵 Woodshop Floor Entry</div>", unsafe_allow_html=True)
+    st.markdown("<div class='dashboard-subtitle' style='text-align: center;'>Unlock your progress dashboard or request an apprentice license.</div>", unsafe_allow_html=True)
     
-    tab_login, tab_signup = st.tabs(["🔒 Secure PIN Access", "🛠️ Sign Up New Apprentice"])
-    
-    with tab_login:
-        # User input requirement reduced purely to secure PIN identification lookup
-        login_pin = st.text_input("Enter 6-Digit Security PIN", type="password", max_chars=6, key="login_pin_input").strip()
+    col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
+    with col_l2:
+        tab_login, tab_signup = st.tabs(["🔒 Secure PIN Access", "🛠️ Sign Up New Apprentice"])
         
-        if st.button("Unlock Workbench Door", type="primary", use_container_width=True):
-            if len(login_pin) != 6:
-                st.warning("PIN numbers must contain exactly 6 digits.")
-            else:
-                with st.spinner("Accessing server registry records..."):
-                    backend_res = sync_cloud_data("fetchData")
-                    
-                if backend_res.get("status") == "success":
+        with tab_login:
+            login_pin = st.text_input("Enter 6-Digit Security PIN", type="password", max_chars=6, key="login_pin_input", help="Enter the 6-digit credential code generated at registration.").strip()
+            st.write("")
+            if st.button("Unlock Studio Door", type="primary", use_container_width=True):
+                if len(login_pin) != 6:
+                    st.warning("PIN numbers must contain exactly 6 digits.")
+                else:
+                    with st.spinner("Downloading secure ledger records..."):
+                        backend_res = sync_cloud_data("fetchData")
+                        
+                    if backend_res.get("status") == "success":
+                        users_list = backend_res.get("users", [])
+                        match = next((u for u in users_list if str(u['PIN']) == str(login_pin)), None)
+                        
+                        if match:
+                            st.session_state.current_user = match
+                            st.session_state.user_authenticated = True
+                            st.success(f"Welcome back, {match['Username']}!")
+                            time.sleep(0.8)
+                            st.rerun()
+                        else:
+                            st.error("No apprentice account registered under that security PIN.")
+                    else:
+                        st.error("Failed to interface with server database.")
+                        
+        with tab_signup:
+            new_user = st.text_input("Apprentice Signature Name", key="reg_user", placeholder="e.g. Alex Mitchell").strip()
+            st.write("")
+            if st.button("Issue New Apprenticeship Portfolio", use_container_width=True):
+                if not new_user:
+                    st.warning("Please provide a valid registration name.")
+                else:
+                    with st.spinner("Checking roster indexes..."):
+                        backend_res = sync_cloud_data("fetchData")
+                        
                     users_list = backend_res.get("users", [])
-                    match = next((u for u in users_list if str(u['PIN']) == str(login_pin)), None)
+                    name_exists = any(u['Username'].lower() == new_user.lower() for u in users_list)
                     
-                    if match:
-                        st.session_state.current_user = match
-                        st.session_state.user_authenticated = True
-                        st.success(f"Access Authorized! Welcome back, Apprentice {match['Username']}.")
-                        time.sleep(1)
-                        st.rerun()
+                    if name_exists:
+                        st.error("This username signature is already active on the shop floor.")
                     else:
-                        st.error("No apprentice account is registered under that security PIN.")
-                else:
-                    st.error("Failed to interface with Google Sheets core server database.")
-                    
-    with tab_signup:
-        new_user = st.text_input("Apprentice Full Name / ID Handle", key="reg_user").strip()
-        
-        if st.button("Issue New Apprentice Contract", use_container_width=True):
-            if not new_user:
-                st.warning("Please provide a valid signature name.")
-            else:
-                with st.spinner("Checking records..."):
-                    backend_res = sync_cloud_data("fetchData")
-                    
-                users_list = backend_res.get("users", [])
-                name_exists = any(u['Username'].lower() == new_user.lower() for u in users_list)
-                
-                if name_exists:
-                    st.error("This username signature is already active on the floor.")
-                else:
-                    # Formulate unique 6 digit system sequence token
-                    existing_pins = [str(u['PIN']) for u in users_list]
-                    while True:
-                        generated_pin = str(random.randint(100000, 999999))
-                        if generated_pin not in existing_pins:
-                            break
-                    
-                    # Core configuration initializing new users with 0 dollars balance
-                    new_user_data = {
-                        "Username": new_user, "PIN": generated_pin,
-                        "Bank Balance": 0, "Jobs Completed": 0
-                    }
-                    for m in MEDALLION_COLUMNS:
-                        new_user_data[m] = 0
+                        while True:
+                            generated_pin = str(random.randint(100000, 999999))
+                            if not any(str(u['PIN']) == generated_pin for u in users_list):
+                                break
                         
-                    with st.spinner("Carving data slots into database..."):
-                        save_res = sync_cloud_data("saveUser", new_user_data)
-                        
-                    if save_res.get("status") == "success":
-                        st.markdown(f"""
-                        ### 🎉 Setup Fully Finalized!
-                        Your profile row is live on your sheet records. Use this PIN to log in from now on:
-                        * **Apprentice Username Reference:** `{new_user}`
-                        * **🔑 YOUR EXCLUSIVE LOGIN PIN:** `{generated_pin}`
-                        """)
-                    else:
-                        st.error("Save transaction tracking connection timed out.")
+                        new_user_data = {
+                            "Username": new_user, "PIN": generated_pin,
+                            "Bank Balance": 0, "Jobs Completed": 0
+                        }
+                        for m in MEDALLION_COLUMNS:
+                            new_user_data[m] = 0
+                            
+                        with st.spinner("Writing portfolio row into cloud database..."):
+                            save_res = sync_cloud_data("saveUser", new_user_data)
+                            
+                        if save_res.get("status") == "success":
+                            st.markdown(f"""
+                            <div style="background: #1C231A; border: 1px solid #385E30; padding: 20px; border-radius: 12px; margin-top: 15px;">
+                                <h4 style="color: #6EE7B7; margin-top:0;">🎉 Portfolio Formed Successfully!</h4>
+                                <p style="color: #D1FAE5; font-size:0.95rem;">Your account is ready in the directory sheet. Write your login PIN down safely:</p>
+                                <code style="font-size: 1.8rem; font-weight: bold; color: #FFFFFF; background: #243321; padding: 4px 14px; border-radius: 6px; letter-spacing: 2px;">{generated_pin}</code>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        else:
+                            st.error("Save transaction tracking connection timed out.")
     st.stop()
 
 # ==========================================
-# PHASE 2: SYSTEM GLOBAL REFRESH HOOKS
+# PHASE 2: ACTIVE GAME RE-ROUTER (MEMORY GAME BOARD)
 # ==========================================
 user = st.session_state.current_user
 
-# ==========================================
-# SUB-PHASE A: MEMORY CARD COUPLING SYSTEM
-# ==========================================
 if st.session_state.game_mode == "MemoryGame":
-    st.markdown(f"<div class='main-header'>🎴 Memory Matching Quality Inspection</div>", unsafe_allow_html=True)
-    st.write(f"Match processing tool components correctly to successfully secure your code work order payout (**+${st.session_state.pending_job_payout}**).")
+    st.markdown(f"<div class='dashboard-header' style='text-align:center;'>🎴 Material Inspection Loop</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='dashboard-subtitle' style='text-align:center;'>Pair the core production components to complete the active contract order (+${st.session_state.pending_job_payout}).</div>", unsafe_allow_html=True)
     st.write("---")
     
-    # Process matched tracking counts
     if len(st.session_state.revealed_cards) == 2:
         idx1, idx2 = st.session_state.revealed_cards
         if st.session_state.memory_cards[idx1] == st.session_state.memory_cards[idx2]:
             st.session_state.matched_pairs.append(st.session_state.memory_cards[idx1])
-        time.sleep(0.8)
+        time.sleep(0.6)
         st.session_state.revealed_cards = []
         st.rerun()
 
-    # Render 2 rows of 4 cards
-    cols = st.columns(4)
-    for i in range(8):
-        col_idx = i % 4
-        with cols[col_idx]:
-            card_item = st.session_state.memory_cards[i]
-            is_matched = card_item in st.session_state.matched_pairs
-            is_flipped = i in st.session_state.revealed_cards
-            
-            if is_matched:
-                st.button(f"✅ {card_item}", key=f"mem_{i}", disabled=True, use_container_width=True)
-            elif is_flipped:
-                st.button(f"👀 {card_item}", key=f"mem_{i}", disabled=True, use_container_width=True)
-            else:
-                if st.button("❓ Reveal", key=f"mem_{i}", use_container_width=True):
-                    if len(st.session_state.revealed_cards) < 2 and i not in st.session_state.revealed_cards:
-                        st.session_state.revealed_cards.append(i)
-                        st.rerun()
+    # Dynamic Center Sizing Frame
+    col_m1, col_m2, col_m3 = st.columns([1, 2, 1])
+    with col_m2:
+        grid_cols = st.columns(4)
+        for i in range(8):
+            col_idx = i % 4
+            with grid_cols[col_idx]:
+                card_item = st.session_state.memory_cards[i]
+                is_matched = card_item in st.session_state.matched_pairs
+                is_flipped = i in st.session_state.revealed_cards
+                
+                if is_matched:
+                    st.button(f"✅ {card_item}", key=f"mem_{i}", disabled=True, use_container_width=True)
+                elif is_flipped:
+                    st.button(f"👀 {card_item}", key=f"mem_{i}", disabled=True, use_container_width=True)
+                else:
+                    if st.button("❓ Reveal", key=f"mem_{i}", use_container_width=True):
+                        if len(st.session_state.revealed_cards) < 2 and i not in st.session_state.revealed_cards:
+                            st.session_state.revealed_cards.append(i)
+                            st.rerun()
+                            
+        st.write("")
+        st.write("---")
+        if st.button("Abort Assignment & Terminate Contract", use_container_width=True):
+            st.session_state.game_mode = "Dashboard"
+            st.rerun()
 
-    # Match Win State Checking
     if len(st.session_state.matched_pairs) == 4:
         st.balloons()
-        st.success(f"🔧 Material Assessment Check Completed! Payout added to your workshop bank ledger: +${st.session_state.pending_job_payout}")
-        
         user['Bank Balance'] = int(user['Bank Balance']) + st.session_state.pending_job_payout
         user['Jobs Completed'] = int(user['Jobs Completed']) + 1
         st.session_state.reward_pending = True
         st.session_state.game_mode = "Dashboard"
-        
-        # Cycle job lists options instantly
         st.session_state.active_jobs = random.sample(TIMBER_JOBS, 2)
-        st.rerun()
-        
-    if st.button("放弃 Return to Workshop Floor"):
-        st.session_state.game_mode = "Dashboard"
         st.rerun()
     st.stop()
 
 # ==========================================
-# MAIN APPLICATION INTERFACE FRAMEWORK
+# PHASE 3: MAIN TYCOON STUDIO DASHBOARD UI
 # ==========================================
-st.markdown(f"<div class='main-header'>🪵 Main Station Dashboard: {user['Username']}</div>", unsafe_allow_html=True)
-st.write("---")
-
-# Metrics Overview Banner Row
-m1, m2, m3 = st.columns(3)
-with m1:
-    st.markdown(f"<div class='card'><div style='color:#8a92a6;'>WALLET BANK LEDGER</div><div class='metric-val' style='color:#00ffcc;'>${user['Bank Balance']}</div></div>", unsafe_allow_html=True)
-with m2:
-    st.markdown(f"<div class='card'><div style='color:#8a92a6;'>COMPLETED WORK COMMISSIONS</div><div class='metric-val' style='color:#b388ff;'>{user['Jobs Completed']} Projects</div></div>", unsafe_allow_html=True)
-with m3:
-    if st.button("🔒 Save Progress & Safely Log Out", use_container_width=True):
+col_title, col_logout = st.columns([3, 1])
+with col_title:
+    st.markdown(f"<div class='dashboard-header'>🪵 {user['Username']}'s Studio Platform</div>", unsafe_allow_html=True)
+    st.markdown("<div class='dashboard-subtitle'>Track lumber balances, accept incoming customer orders, and manage wood stocks.</div>", unsafe_allow_html=True)
+with col_logout:
+    st.write("")
+    if st.button("🔒 Save & Securely Log Out", use_container_width=True, type="secondary"):
         st.session_state.clear()
         st.rerun()
 
-# --- LOOT DROPS SYNC PIPELINE ---
+# --- REAL-TIME HIGHER LEVEL METRIC BANNER CARD SPANS ---
+col_met1, col_met2 = st.columns(2)
+with col_met1:
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #161A2E, #0E111F); border: 1px solid #232B4E; border-radius: 14px; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <div style="color: #8F9CAE; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">Liquid Bank Balance</div>
+            <div style="color: #10B981; font-size: 2rem; font-weight: 800; margin-top: 2px;">${user['Bank Balance']}</div>
+        </div>
+        <div style="font-size: 2.2rem;">💳</div>
+    </div>
+    """, unsafe_allow_html=True)
+with col_met2:
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #1C162E, #110E1F); border: 1px solid #2D234E; border-radius: 14px; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <div style="color: #9C8FAE; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">Completed Commissions</div>
+            <div style="color: #A78BFA; font-size: 2rem; font-weight: 800; margin-top: 2px;">{user['Jobs Completed']} Active Builds</div>
+        </div>
+        <div style="font-size: 2.2rem;">🛠️</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.write("")
+
+# --- LOOT DROPS REWARD MODAL OVERLAY TRIGGER ---
 if st.session_state.get('reward_pending', False):
-    st.write("---")
-    st.subheader("🏅 Contract Milestone Reached! Pull Medallion Drop")
-    if st.button("⚡ EXECUTE SHUFFLE & SAVE SEQUENCE", type="primary", use_container_width=True):
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #2B2114, #1A140C); border: 1px solid #D4AF37; padding: 24px; border-radius: 16px; margin-bottom: 25px; text-align: center;">
+        <h3 style="color: #F4D068; margin-top: 0; font-weight: 700; letter-spacing: -0.5px;">🏅 Project Commission Accomplished!</h3>
+        <p style="color: #CBB48E; font-size: 0.95rem; margin-bottom: 15px;">Your quality inspection passed. Click below to shuffle and pull a random wood medallion drop.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("⚡ SHUFFLE LOOM & SECURE DATA IN CLOUD", type="primary", use_container_width=True):
         with st.spinner("Paging drop weight parameters..."):
             backend_res = sync_cloud_data("fetchData")
         medallion_pool = backend_res.get("medallions", [])
@@ -250,99 +338,112 @@ if st.session_state.get('reward_pending', False):
             med_weights = [10.0] * 10
             
         final_award = random.choices(med_names, weights=med_weights, k=1)[0]
-        st.success(f"🏆 Acquired Drop Reward: **{final_award} Medallion** has been logged!")
+        st.success(f"🏆 Premium Drop Acquired: Added 1x [{final_award} Medallion] onto your studio rack sheet!")
         user[final_award] = int(user.get(final_award, 0)) + 1
         st.session_state.reward_pending = False
         
-        with st.spinner("Syncing secure records up to cloud..."):
+        with st.spinner("Saving data row to cloud matrix database..."):
             sync_cloud_data("saveUser", user)
-        time.sleep(1.5)
+        time.sleep(1.8)
         st.rerun()
-
-st.write("---")
+    st.write("---")
 
 # ==========================================
-# THE THREE APPLICATION WORKSPACE SECTIONS
+# THE THREE-COLUMN DASHBOARD HUB LAYOUT ENGINE
 # ==========================================
 panel_left, panel_center, panel_right = st.columns(3)
 
-# SECTION 1: WORK ORDER COMMISSIONS (JOB BOARD)
+# --- PANEL 1: CLIENT WORK ORDERS ---
 with panel_left:
-    st.markdown("### 📋 Active Open Work Orders")
-    st.write("Accepting contracts launches a memory retention pairs matching configuration check to clear the payout balance.")
-    st.write("")
+    st.markdown("<div class='panel-box'>", unsafe_allow_html=True)
+    st.markdown("<div class='panel-title'>📋 Open Work Contracts</div>", unsafe_allow_html=True)
+    st.markdown("<div class='panel-desc'>Accepting client orders spins up a precision components material assembly check. Complete it to secure the cash ledger.</div>", unsafe_allow_html=True)
     
     for idx, job in enumerate(st.session_state.active_jobs):
-        with st.container():
-            st.markdown(f"**{job['title']}**")
-            st.markdown(f"<span style='color:#00ffcc; font-weight:bold;'>Payout Value: +${job['pay']}</span>", unsafe_allow_html=True)
-            if st.button(f"Accept Assignment Contract", key=f"job_btn_{idx}", use_container_width=True):
-                init_memory_game(job['pay'])
-                st.rerun()
-            st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class='job-item'>
+            <div class='job-title'>{job['title']}</div>
+            <div style='color: #10B981; font-weight: 600; font-size: 0.85rem;'>Value Payout: +${job['pay']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button(f"Initialize Assessment Contract", key=f"job_btn_{idx}", use_container_width=True):
+            init_memory_game(job['pay'])
+            st.rerun()
+        st.write("")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# SECTION 2: SHOWCASE INVENTORY DRAWER
+# --- PANEL 2: SHOWROOM SYSTEM RECONSTRUCTS ---
 with panel_center:
-    st.markdown("### 📦 Workshop Showroom Storage")
-    st.write("Review collected assets and organized wood specimens.")
-    st.write("")
+    st.markdown("<div class='panel-box'>", unsafe_allow_html=True)
+    st.markdown("<div class='panel-title'>📦 Studio Showcase Inventory</div>", unsafe_allow_html=True)
+    st.markdown("<div class='panel-desc'>Review verified lumber specimens and advanced trade assets earned across completed milestones.</div>", unsafe_allow_html=True)
     
-    # Isolated inventory route redirect button
-    if st.button("🧰 Open Inventory Control Dashboard Panel", type="primary", use_container_width=True):
-        st.toast("Inventory sub-system pages are under production construction profiles!")
+    if st.button("🧰 Open Showroom Space Management", type="primary", use_container_width=True):
+        st.toast("Inventory page module routing configurations are running on internal frameworks!")
         
-    st.write("---")
-    # Quick display overview visualization matrix matching spreadsheet data lines
-    st.markdown("**Specimens Portfolio Counter Overview:**")
+    st.markdown("<div style='margin-top: 20px; margin-bottom: 5px; font-size: 0.8rem; font-weight: 600; color: #4A5568; letter-spacing: 0.5px; text-transform: uppercase;'>Specimen Counter Overview</div>", unsafe_allow_html=True)
+    
     for med in MEDALLION_COLUMNS[:5]:
-        st.text(f"🪵 {med} Medallions: x{user.get(med, 0)}")
+        count = user.get(med, 0)
+        st.markdown(f"""
+        <div class='showroom-preview-row'>
+            <span style='color: #CBD5E0; font-weight: 500;'>🪵 {med} Medallion</span>
+            <span style='color: #F4D068; font-weight: 700; background: #1F2438; padding: 2px 8px; border-radius: 4px;'>x{count}</span>
+        </div>
+        """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# SECTION 3: DICE WAGER MARKET & RETAIL STORE
+# --- PANEL 3: DICE WAGER MATRIX & MARKET SQUARE ---
 with panel_right:
-    st.markdown("### 🎲 Wager Matrix & Market Square")
+    st.markdown("<div class='panel-box'>", unsafe_allow_html=True)
+    st.markdown("<div class='panel-title'>🎲 Wager Arena & Market</div>", unsafe_allow_html=True)
     
-    # Sub-Block A: Medallion Dice Stake Game
-    st.markdown("#### Dice Medallion Stake Wager")
-    st.caption("Risk an acquired medallion asset. Roll an even number (2, 4, 6) to double it; roll an odd number to break your build down into scrap.")
+    st.markdown("<div style='font-size: 0.9rem; font-weight: 600; color: #E2E8F0; margin-bottom: 4px;'>Medallion Stake Machine</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size: 0.75rem; color: #718096; line-height: 1.4; margin-bottom: 12px;'>Risk an earned medallion item. Roll Even (2, 4, 6) to double its value. Roll Odd and it shatters into scrap wood.</div>", unsafe_allow_html=True)
     
-    wager_med = st.selectbox("Select Target Medallion to Risk", [""] + [m for m in MEDALLION_COLUMNS if int(user.get(m, 0)) > 0])
-    if st.button("🎲 Roll High-Stakes Wager", use_container_width=True, disabled=not wager_med):
+    # Safely construct options containing only items the user actually owns
+    valid_options = [""] + [m for m in MEDALLION_COLUMNS if int(user.get(m, 0)) > 0]
+    wager_med = st.selectbox("Select Target Medallion Asset", valid_options, label_visibility="collapsed")
+    
+    st.write("")
+    if st.button("Roll High-Stakes Stake", use_container_width=True, disabled=not wager_med):
         user[wager_med] = int(user[wager_med]) - 1
         dice_result = random.randint(1, 6)
         
-        st.markdown(f"**Dice outcome landed on: `{dice_result}`**")
+        st.markdown(f"<div style='text-align: center; margin: 10px 0; font-weight: bold; font-size: 1rem; color:#FFFFFF;'>Die landed on: [{dice_result}]</div>", unsafe_allow_html=True)
         if dice_result % 2 == 0:
             user[wager_med] = int(user[wager_med]) + 2
-            st.success(f"🎯 Perfect Calibration! Doubled your target asset count! Obtained +2 {wager_med} Medallions.")
+            st.success(f"🎯 Perfect cut! Doubled into +2 {wager_med} Medallions!")
         else:
-            st.error("💥 Machine Stress Fracture! Your medallion shattered in the process.")
+            st.error("💥 Splinter fracture! The asset broke during assembly processing.")
             
-        with st.spinner("Saving changes..."):
+        with st.spinner("Saving transaction metrics..."):
             sync_cloud_data("saveUser", user)
         time.sleep(2)
         st.rerun()
         
-    st.markdown("---")
+    st.markdown("<hr style='border-color: #1E2235; margin: 20px 0;'>", unsafe_allow_html=True)
     
-    # Sub-Block B: Wood Shop Retail Store
-    st.markdown("#### 🛒 Wood Shop Retail Store")
-    st.caption("Trade cash balances to purchase raw inventory materials.")
+    st.markdown("<div style='font-size: 0.9rem; font-weight: 600; color: #E2E8F0; margin-bottom: 4px;'>🛒 Material Stock Procurement</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size: 0.75rem; color: #718096; margin-bottom: 12px;'>Trade liquid capital balances to source component lines directly.</div>", unsafe_allow_html=True)
     
     col_b1, col_b2 = st.columns(2)
     with col_b1:
-        st.markdown("**Spruce Stock Supply**")
-        st.markdown("<span style='color:#ff4d4d;'>Cost: $40</span>", unsafe_allow_html=True)
-        if st.button("Purchase Spruce Stock", use_container_width=True, disabled=int(user['Bank Balance']) < 40):
+        st.markdown("<div style='font-size:0.8rem; font-weight:600; color:#CBD5E0;'>Spruce Lumber</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size:0.75rem; color:#EF4444; margin-bottom:6px;'>Cost: $40</div>", unsafe_allow_html=True)
+        if st.button("Buy Spruce Stock", use_container_width=True, disabled=int(user['Bank Balance']) < 40):
             user['Bank Balance'] = int(user['Bank Balance']) - 40
             user['Spruce'] = int(user.get('Spruce', 0)) + 1
             sync_cloud_data("saveUser", user)
             st.rerun()
             
     with col_b2:
-        st.markdown("**Pine Stock Supply**")
-        st.markdown("<span style='color:#ff4d4d;'>Cost: $50</span>", unsafe_allow_html=True)
-        if st.button("Purchase Pine Stock", use_container_width=True, disabled=int(user['Bank Balance']) < 50):
+        st.markdown("<div style='font-size:0.8rem; font-weight:600; color:#CBD5E0;'>Pine Lumber</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size:0.75rem; color:#EF4444; margin-bottom:6px;'>Cost: $50</div>", unsafe_allow_html=True)
+        if st.button("Buy Pine Stock", use_container_width=True, disabled=int(user['Bank Balance']) < 50):
             user['Bank Balance'] = int(user['Bank Balance']) - 50
             user['Pine'] = int(user.get('Pine', 0)) + 1
             sync_cloud_data("saveUser", user)
             st.rerun()
+            
+    st.markdown("</div>", unsafe_allow_html=True)
