@@ -3,9 +3,8 @@ import requests
 import random
 import time
 
-# --- HARDCODED APPS SCRIPT WEB APP LINK ---
-API_URL = "https://script.google.com/macros/s/AKfycby25QOnfKZNSewz1y9dyKsG8_mIBbv7k1-YV4GWrZglsr6H_NEuYGIadwveneq0kLP4zA/exec"
-
+# --- PULL HIDDEN API URL FROM STREAMLIT SECRETS ---
+API_URL = st.secrets["API_URL"]
 # 10 Unique Wood Medallions mapped exactly to Columns E through N in your Google Sheet
 MEDALLION_COLUMNS = ["Spruce", "Pine", "Meranti", "Oak", "Maple", "Walnut", "Cherry", "Mahogany", "Rosewood", "Ebony"]
 
