@@ -35,6 +35,8 @@ if 'current_user' not in st.session_state:
     st.session_state.current_user = None
 if 'game_mode' not in st.session_state:
     st.session_state.game_mode = "Dashboard"
+if 'medallion_metadata' not in st.session_state:
+    st.session_state.medallion_metadata = {}
 
 # --- TIMBER RELATED CONTRACT GENERATOR POOL ---
 TIMBER_JOBS = [
@@ -80,7 +82,7 @@ st.set_page_config(page_title="Apprentice Studio Hub", page_icon="🪵", layout=
 
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, sans-serif;
@@ -108,11 +110,12 @@ st.markdown("""
         justify-content: flex-start;
         width: 100%;
         text-align: center;
+        position: relative; /* Anchor point context for hovering cards */
     }
     
     .medallion-frame-fixed {
         width: 100%;
-        max-width: 70px; /* Constrains size so circles don't blow up on wide monitors */
+        max-width: 70px; 
         aspect-ratio: 1 / 1;
         display: flex;
         align-items: center;
@@ -129,7 +132,7 @@ st.markdown("""
     }
     
     .circle-placeholder-lock {
-        width: 90%; /* Slightly smaller than full image boundaries for visual crispness */
+        width: 90%; 
         height: 90%;
         border-radius: 50%;
         border: 2px dashed #212435;
@@ -140,6 +143,44 @@ st.markdown("""
         color: #31364C;
         font-size: 1rem;
         box-sizing: border-box;
+    }
+    
+    /* --- INTERACTIVE FLOATING HOVER CARD COMPONENT --- */
+    .tooltip-card {
+        visibility: hidden;
+        opacity: 0;
+        position: absolute;
+        bottom: 115%; /* Positioned cleanly right above slot line items */
+        left: 50%;
+        transform: translateX(-50%) translateY(5px);
+        width: 175px;
+        background: #171A26;
+        border: 1px solid #2E344D;
+        border-radius: 10px;
+        padding: 10px 12px;
+        text-align: left;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        z-index: 99999 !important;
+        transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+        pointer-events: none;
+    }
+    
+    /* Reveal card details smoothly on container hover hooks */
+    .slot-container:hover .tooltip-card {
+        visibility: visible;
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    
+    .tip-line {
+        font-size: 0.78rem;
+        color: #E2E8F0;
+        margin-bottom: 4px;
+        line-height: 1.3;
+    }
+    .tip-line span {
+        font-weight: 700;
+        color: #F4D068;
     }
     
     .badge-label-title {
@@ -241,6 +282,15 @@ if not st.session_state.user_authenticated:
                         match = next((u for u in users_list if str(u['PIN']) == str(login_pin)), None)
                         
                         if match:
+                            # Cache the spreadsheet metadata directly onto session state dictionary memory
+                            meta_map = {}
+                            for item in backend_res.get("medallions", []):
+                                meta_map[item["Medallion"]] = {
+                                    "Rarity": item.get("Rarity", "Common"),
+                                    "Weight": item.get("Weight", "10%"),
+                                    "Availability": item.get("Availability", "Unlimited")
+                                }
+                            st.session_state.medallion_metadata = meta_map
                             st.session_state.current_user = match
                             st.session_state.user_authenticated = True
                             st.success(f"Welcome back, {match['Username']}!")
@@ -362,22 +412,34 @@ with col_logout:
         st.rerun()
 
 # ------------------------------------------------------------
-# 🏅 RE-ENGINEERED PURE HTML 12-COLUMN MEDALLION SHOWCASE
+# 🏅 12-COLUMN MEDALLION SHOWCASE (With Details Tooltip Popup Card)
 # ------------------------------------------------------------
 st.markdown("<p style='font-size: 0.85rem; font-weight: 600; color: #A0AEC0; margin-bottom: 14px; letter-spacing:0.5px;'>MEDALLION SHOWCASE CASEMENT</p>", unsafe_allow_html=True)
 badge_cols = st.columns(12)
 
 for idx, wood_name in enumerate(MEDALLION_COLUMNS):
     display_label = wood_name[:5].upper()
+    
+    # Retrieve data parameters out of cached worksheet references
+    meta = st.session_state.medallion_metadata.get(wood_name, {"Rarity": "Common", "Weight": "10%", "Availability": "99"})
+    rarity_val = meta.get("Rarity", "Common")
+    prob_val = f"{meta.get('Weight', '10')}%"
+    avail_val = meta.get("Availability", "0")
+
     with badge_cols[idx]:
         owned_count = int(user.get(wood_name, 0))
         img_filename = f"assets/{wood_name.lower()}.png"
         img_base64 = get_image_base64(img_filename)
         
         if owned_count > 0 and img_base64:
-            # Renders image via raw HTML to completely strip out Streamlit's lightbox/fullscreen button wrappers
             st.markdown(f"""
             <div class='slot-container'>
+                <div class='tooltip-card'>
+                    <div class='tip-line'>💎 Name: <span>{wood_name}</span></div>
+                    <div class='tip-line'>🏷️ Rarity: <span>{rarity_val}</span></div>
+                    <div class='tip-line'>🎲 Prob: <span>{prob_val}</span></div>
+                    <div class='tip-line'>📦 Avail: <span>{avail_val} left</span></div>
+                </div>
                 <div class='medallion-frame-fixed'>
                     <img class='medallion-img-render' src='data:image/png;base64,{img_base64}' />
                 </div>
@@ -386,9 +448,14 @@ for idx, wood_name in enumerate(MEDALLION_COLUMNS):
             </div>
             """, unsafe_allow_html=True)
         else:
-            # Placeholders perfectly share structural parameters to align layout dimensions
             st.markdown(f"""
             <div class='slot-container'>
+                <div class='tooltip-card'>
+                    <div class='tip-line'>💎 Name: <span>{wood_name}</span></div>
+                    <div class='tip-line'>🏷️ Rarity: <span>{rarity_val}</span></div>
+                    <div class='tip-line'>🎲 Prob: <span>{prob_val}</span></div>
+                    <div class='tip-line'>📦 Avail: <span>{avail_val} left</span></div>
+                </div>
                 <div class='medallion-frame-fixed'>
                     <div class='circle-placeholder-lock'>🔒</div>
                 </div>
@@ -438,22 +505,36 @@ if st.session_state.get('reward_pending', False):
             backend_res = sync_cloud_data("fetchData")
         medallion_pool = backend_res.get("medallions", [])
         
-        med_names = [m['Medallion'] for m in medallion_pool if m['Medallion'] in MEDALLION_COLUMNS]
-        med_weights = [float(m['Weight']) for m in medallion_pool if m['Medallion'] in MEDALLION_COLUMNS]
+        # Filter pool items that have a positive stock count remaining
+        valid_pool = [m for m in medallion_pool if m['Medallion'] in MEDALLION_COLUMNS and int(m.get('Availability', 0)) > 0]
         
-        if not med_names:
-            med_names = MEDALLION_COLUMNS
-            med_weights = [10.0] * 12
+        if not valid_pool:
+            st.error("All available medallion stock reserves across the studio network are fully depleted!")
+        else:
+            med_names = [m['Medallion'] for m in valid_pool]
+            med_weights = [float(m['Weight']) for m in valid_pool]
             
-        final_award = random.choices(med_names, weights=med_weights, k=1)[0]
-        st.success(f"🏆 Premium Drop Acquired: Added 1x [{final_award} Medallion] onto your studio rack sheet!")
-        user[final_award] = int(user.get(final_award, 0)) + 1
-        st.session_state.reward_pending = False
-        
-        with st.spinner("Saving data row to cloud matrix database..."):
-            sync_cloud_data("saveUser", user)
-        time.sleep(1.8)
-        st.rerun()
+            final_award = random.choices(med_names, weights=med_weights, k=1)[0]
+            
+            # Locate the exact selected sheet match object record 
+            target_sheet_row = next(m for m in valid_pool if m['Medallion'] == final_award)
+            
+            # Decrement availability count by exactly 1
+            new_availability = max(0, int(target_sheet_row.get('Availability', 1)) - 1)
+            target_sheet_row['Availability'] = new_availability
+            
+            st.success(f"🏆 Premium Drop Acquired: Added 1x [{final_award} Medallion] onto your studio rack sheet! (Reserves left: {new_availability})")
+            
+            user[final_award] = int(user.get(final_award, 0)) + 1
+            st.session_state.reward_pending = False
+            
+            with st.spinner("Synchronizing server stock reserves & wallet metrics..."):
+                # Save both the updated user document and the updated medallion stock configuration row back up to Google Sheets
+                sync_cloud_data("saveUser", user)
+                sync_cloud_data("saveMedallion", target_sheet_row)
+                
+            time.sleep(1.8)
+            st.rerun()
     st.write("---")
 
 # ==========================================
