@@ -14,20 +14,26 @@ st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide")
 
 @st.cache_data(ttl=1)
 def fetch_all_sheet_data():
-    """Fetches layout array details, live value summaries, and collected counters."""
+    """Fetches layout array details, live values, and individual inventory counts from master_sheet."""
     try:
         response = requests.post(API_URL, json={"action": "fetchData"}, timeout=15)
         if response.status_code == 200:
             data = response.json()
             if data.get("status") == "success":
+                # Map info parameters from the "Medallions" sheet
                 medallions_map = {str(m["Medallion"]).strip().lower(): m for m in data.get("medallions", [])}
-                summary = data.get("master_summary", {})
-                val = summary.get("CollectionValue", "$0")
-                coll = summary.get("MedallionsCollected", "0")
-                return medallions_map, val, coll
+                
+                # Dynamic inventory parser pulling right from master_sheet headers/row 3 matrix
+                master_summary = data.get("master_summary", {})
+                inventory_counts = master_summary.get("Inventory", {})
+                
+                val = master_summary.get("CollectionValue", "$0")
+                coll = master_summary.get("MedallionsCollected", "0")
+                
+                return medallions_map, inventory_counts, val, coll
     except Exception as e:
         st.error(f"Sync Failure: {str(e)}")
-    return {}, "Loading...", "Loading..."
+    return {}, {}, "Loading...", "Loading..."
 
 def get_image_base64(path):
     if os.path.exists(path):
@@ -35,17 +41,19 @@ def get_image_base64(path):
             return base64.b64encode(image_file.read()).decode()
     return None
 
-live_data, summary_value, summary_collected = fetch_all_sheet_data()
+# Load up your dynamic dataset
+live_data, live_inventory, summary_value, summary_collected = fetch_all_sheet_data()
 
 # Process inbound URL synchronization parameters from the javascript mining module
 query_params = st.query_params
 if "mined_item" in query_params:
     target_mined = query_params["mined_item"]
     try:
-        # Write directly to Google Sheets database infrastructure
+        # Write the data tracking flag back to Google Sheets
         res = requests.post(API_URL, json={"action": "mineMedallion", "item": target_mined}, timeout=15)
         if res.status_code == 200:
-            st.cache_data.clear() # Wipe layout caching models to immediately show new updates
+            st.cache_data.clear()  # Purge old cache states completely
+            st.rerun()             # Force clean system reload
     except Exception as e:
         st.error(f"Failed to record mined item to cloud sheet: {e}")
     st.query_params.clear()
@@ -62,7 +70,7 @@ for wood in MEDALLION_COLUMNS:
 asset_map_js += "}"
 
 # ====================================================================
-# UNIFIED GRID LAYOUT WITH INTERACTIVE CLAIM MODULE
+# UNIFIED GRID LAYOUT WITH LIVE INVENTORY SYNC
 # ====================================================================
 html_elements = f"""
 <style>
@@ -229,7 +237,6 @@ html_elements = f"""
         letter-spacing: 0.5px;
     }}
 
-    /* Sleek Claim Action Button Styling */
     .claim-button {{
         margin-top: 14px;
         width: 160px; height: 32px;
@@ -264,21 +271,12 @@ html_elements = f"""
 
 for wood_name in MEDALLION_COLUMNS:
     display_label = wood_name[:5].upper()
-    
     lookup_key = wood_name.strip().lower()
-    sheet_row = live_data.get(lookup_key, None)
     
-    if "medallions" in locals() or True:
-        try:
-            owned = 0
-            if lookup_key == 'spruce': owned = 6
-            elif lookup_key == 'pine': owned = 2
-            elif lookup_key == 'meranti': owned = 4
-            elif lookup_key == 'mahogany': owned = 2
-            elif lookup_key == 'rosewood': owned = 1
-        except:
-            owned = 0
-            
+    # Live count read right from Google Sheet database payload dictionary keys
+    owned = int(live_inventory.get(lookup_key, 0))
+    
+    sheet_row = live_data.get(lookup_key, None)
     rarity_class = ""
     if sheet_row:
         rarity = sheet_row.get("Rarity", "N/A")
@@ -307,6 +305,7 @@ for wood_name in MEDALLION_COLUMNS:
         
     img_b64 = get_image_base64(f"assets/{wood_name.lower()}.png")
     
+    # The visual frame now dynamically checks if 'owned > 0' using real row data values!
     html_elements += f"""
     <div class="grid-node">
         <div class="node-tooltip">
@@ -398,7 +397,6 @@ html_elements += f"""
                 itemTxt.innerText = selectedItem.toUpperCase() + " MEDALLION!";
                 wrapper.style.opacity = "1";
                 
-                // Show claim action button rather than automatically refreshing
                 claimBtn.classList.add('visible');
             }}
         }}
@@ -411,7 +409,6 @@ html_elements += f"""
         claimBtn.disabled = true;
         claimBtn.innerText = "Saving...";
         
-        // Execute parameter pass-back which triggers the refresh and Google Sheets increment logic
         const curUrl = new URL(window.parent.location.href);
         curUrl.searchParams.set("mined_item", selectedItem);
         window.parent.location.href = curUrl.toString();
@@ -419,5 +416,4 @@ html_elements += f"""
 </script>
 """
 
-# Height slightly increased to 770 to prevent any layout shifting when the claim button materializes
 st.components.v1.html(html_elements, height=770, scrolling=False)
