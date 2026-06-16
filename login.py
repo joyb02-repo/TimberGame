@@ -1,6 +1,6 @@
 # ====================================================================
 # PROJECT: TIMBER MEDALLION PORTFOLIO SYSTEM
-# FILE: login.py (SCALE-TO-FIT FIXED DESIGN)
+# FILE: login.py (COMPACT NO-SCROLL DESIGN)
 # ====================================================================
 
 import streamlit as st
@@ -41,10 +41,10 @@ def get_http_session():
     session.mount("http://", adapter)
     return session
 
-# Global UI Style Framework - Scale calculations tied strictly to screen viewport constraints
+# Global UI Style Framework - Aggressively shrunken parameters to prevent overflow scrolling
 st.markdown("""
 <style>
-    /* Absolute containment framework to break Streamlit's scrolling mechanics */
+    /* Force absolute layout limits on the app framework to completely stop scrolling */
     html, body, .stApp, [data-testid="stMain"], [data-testid="stMainContainer"], .main, .block-container {
         margin: 0 !important;
         padding: 0 !important;
@@ -81,15 +81,15 @@ st.markdown("""
         align-items: center !important;
     }
     
-    /* The Central Core Login Card Frame - Uses dynamic layout calculations to automatically scale with viewport heights */
+    /* Highly Compact Core Login Card Frame - Fits entirely inside strict screen limits */
     div[data-testid="stVerticalBlock"]:has(div.login-card-anchor) {
         background: #161925 !important;
         border: 1px solid #23273A !important;
         border-radius: 12px !important;
-        padding: min(5vh, 40px) min(5vw, 45px) !important;
-        max-width: 440px !important;
-        width: min(440px, 90vw) !important;
-        max-height: 85vh !important; /* Prevents container from ever bleeding past screen edge heights */
+        padding: min(3.5vh, 28px) min(5vw, 35px) !important; /* Shrunken vertical internal paddings */
+        max-width: 400px !important; /* Made the card width sleeker */
+        width: min(400px, 88vw) !important;
+        max-height: 90vh !important; 
         margin: auto !important; 
         box-shadow: 0 20px 45px rgba(0,0,0,0.5) !important;
         text-align: center !important;
@@ -100,27 +100,27 @@ st.markdown("""
         justify-content: center !important;
     }
     
-    /* Fluid Logo Component scaling bounds */
-    .login-logo-container { width: 100%; text-align: center; margin-bottom: min(3vh, 25px); display: flex; justify-content: center; }
-    .login-logo-container img { height: min(15vh, 130px); width: auto; object-fit: contain; }
+    /* Scaled down spaces and elements */
+    .login-logo-container { width: 100%; text-align: center; margin-bottom: min(2vh, 15px); display: flex; justify-content: center; }
+    .login-logo-container img { height: min(11vh, 90px); width: auto; object-fit: contain; } /* Shrunk logo image max heights */
     
-    .custom-login-header { font-size: min(5vw, 22px); font-weight: 600; color: #FFFFFF; margin-bottom: min(1.5vh, 10px); width: 100%; text-align: center !important; letter-spacing: 0.5px; font-family: 'Inter', sans-serif; }
-    .custom-login-sub { font-size: min(3.5vw, 13px); color: rgba(255, 255, 255, 0.4); margin-bottom: min(4vh, 30px); width: 100%; text-align: center !important; line-height: 1.5; font-family: 'Inter', sans-serif; }
+    .custom-login-header { font-size: min(4.8vw, 19px); font-weight: 600; color: #FFFFFF; margin-bottom: min(1vh, 6px); width: 100%; text-align: center !important; letter-spacing: 0.5px; font-family: 'Inter', sans-serif; }
+    .custom-login-sub { font-size: min(3.2vw, 12px); color: rgba(255, 255, 255, 0.4); margin-bottom: min(2.5vh, 18px); width: 100%; text-align: center !important; line-height: 1.4; font-family: 'Inter', sans-serif; }
     
-    /* Passcode Wrapper Frame Input Column constraints */
-    div.stTextInput { width: min(160px, 45vw) !important; margin: 0 auto min(1vh, 5px) auto !important; }
+    /* Compact Passcode Interface Area */
+    div.stTextInput { width: min(150px, 40vw) !important; margin: 0 auto min(0.5vh, 4px) auto !important; }
     
     div[data-testid="stTextInput"] div[data-component="stTextInputRootElement"] {
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        height: min(6vh, 46px) !important;
+        height: min(5.5vh, 42px) !important;
         box-sizing: border-box !important;
     }
     
     div.stTextInput input {
         background-color: #0E1117 !important; border: 1px solid #23273A !important; border-radius: 6px !important;
-        color: #FFF !important; text-align: center !important; font-size: min(5.5vw, 24px) !important; font-weight: 700 !important;
+        color: #FFF !important; text-align: center !important; font-size: min(5vw, 21px) !important; font-weight: 700 !important;
         letter-spacing: 6px !important; height: 100% !important; box-sizing: border-box !important;
         display: flex !important;
         align-items: center !important;
@@ -146,10 +146,10 @@ st.markdown("""
         padding: 0px !important; 
     }
     
-    /* Submission Interface triggers */
+    /* Compact Submit Action Button */
     div.stButton {
         width: 100% !important;
-        margin: min(3vh, 25px) 0 0 0 !important;
+        margin: min(2vh, 16px) 0 0 0 !important;
         padding: 0 !important;
         display: flex !important;
         justify-content: center !important;
@@ -157,12 +157,12 @@ st.markdown("""
     
     div.stButton > button {
         width: 100% !important; 
-        height: min(7vh, 50px) !important; 
+        height: min(6vh, 44px) !important; 
         background-color: #F4D068 !important; 
         border: none !important; 
         border-radius: 8px !important;
         color: #0E1117 !important; 
-        font-size: min(4vw, 14px) !important; 
+        font-size: min(3.8vw, 13px) !important; 
         font-weight: 700 !important; 
         text-transform: uppercase !important; 
         letter-spacing: 1.5px !important;
@@ -177,24 +177,9 @@ st.markdown("""
     div.stButton > button:hover {
         background-color: #f5d77f !important;
         transform: translateY(-1px) !important;
-        box-shadow: 0 6px 20px rgba(244, 208, 104, 0.25) !important;
     }
     
-    div.stButton > button:active {
-        transform: translateY(0px) !important;
-    }
-    
-    div[data-testid="stAlert"] { margin-top: min(1.5vh, 15px) !important; width: 100% !important; }
-
-    /* For extremely short display heights (like landscape phones), scale back proportions */
-    @media (max-height: 580px) {
-        div[data-testid="stVerticalBlock"]:has(div.login-card-anchor) {
-            padding: 15px 30px !important;
-        }
-        .login-logo-container { margin-bottom: 5px !important; }
-        .custom-login-sub { margin-bottom: 12px !important; }
-        div.stButton { margin-top: 10px !important; }
-    }
+    div[data-testid="stAlert"] { margin-top: min(1vh, 10px) !important; width: 100% !important; }
 </style>
 """, unsafe_allow_html=True)
 
