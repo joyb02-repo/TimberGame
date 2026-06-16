@@ -127,12 +127,13 @@ st.markdown("""
         border-radius: 6px !important;
         color: #FFF !important; 
         text-align: center !important; 
-        font-size: 26px !important; 
+        font-size: 36px !important; 
         font-weight: 700 !important; 
-        letter-spacing: 6px !important; 
-        height: 44px !important;
+        letter-spacing: 12px !important; 
+        height: 52px !important;
         box-sizing: border-box !important;
-        padding: 0px 0px 0px 6px !important;
+        padding: 0px 0px 0px 12px !important;
+        -webkit-text-security: disc !important; /* Fallback for modern engines */
     }
     div[data-testid="stForm"] input:focus {
         border-color: #3D4563 !important;
@@ -178,7 +179,7 @@ if not st.session_state["authenticated"]:
         if logo_b64:
             st.markdown(f'<div class="login-logo-container"><img src="data:image/png;base64,{logo_b64}" /></div>', unsafe_allow_html=True)
             
-        st.markdown('<div class="custom-login-header">Medallion Management Portal</div>', unsafe_allow_html=True)
+        st.markdown('<div class="custom-login-header">Portfolio System Access</div>', unsafe_allow_html=True)
         st.markdown('<div class="custom-login-sub">Enter your 4-digit master passcode key to authenticate transaction nodes.</div>', unsafe_allow_html=True)
         
         input_passcode = st.text_input("Passcode", type="password", label_visibility="collapsed", max_chars=4)
@@ -206,14 +207,15 @@ if not st.session_state["authenticated"]:
 # ====================================================================
 else:
     # Invisible bridge layout element used for data syncing
-    if st.text_input("refresh_bridge", key="refresh_trigger", label_visibility="collapsed") != "":
-        if st.session_state["refresh_trigger"] == "LOGOUT_EXECUTE":
+    refresh_value = st.text_input("refresh_bridge", key="refresh_trigger", label_visibility="collapsed")
+    if refresh_value != "":
+        if refresh_value == "LOGOUT_EXECUTE":
             st.session_state["authenticated"] = False
             st.session_state["user_passcode"] = ""
             st.session_state["username"] = "Guest"
             st.session_state["refresh_trigger"] = ""
             st.rerun()
-        elif st.session_state["refresh_trigger"] == "REFRESH_DATA_FLOW":
+        elif refresh_value == "REFRESH_DATA_FLOW":
             st.session_state["refresh_trigger"] = ""
             st.session_state["refresh_counter"] += 1
             st.rerun()
@@ -260,7 +262,8 @@ else:
             position: absolute; top: 0; right: 15px; height: 32px; padding: 0 14px;
             background: #161925; border: 1px solid #23273A; border-radius: 6px;
             color: #718096; font-size: 11px; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.5px; cursor: pointer; transition: all 0.15s ease; display: flex; align-items: center; gap: 6px; z-index: 999999;
+            letter-spacing: 0.5px; cursor: pointer; transition: all 0.15s ease; display: flex; align-items: center; gap: 6px; 
+            z-index: 10; /* Lower layer priority than tooltips */
         }
         .logout-btn-global:hover {
             border-color: #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.05);
@@ -276,9 +279,13 @@ else:
         .lock-node { width: 52px; height: 52px; border-radius: 50%; border: 2px dashed #23273A; background: #161925; display: flex; align-items: center; justify-content: center; color: #3D4563; font-size: 11px; transition: transform 0.15s ease-in-out; box-sizing: border-box; }
         .grid-node:hover .image-frame img, .grid-node:hover .lock-node { transform: scale(1.15); }
         .quantity-badge { font-size: 12px; font-weight: 700; color: #F4D068; margin-bottom: 3px; min-height: 15px; }
+        
+        /* High Z-Index Tooltips to sit perfectly on top of all header/logout buttons */
+        .node-tooltip { visibility: hidden; opacity: 0; position: absolute; top: -120px; left: 50%; transform: translateX(-50%); width: 180px; background: #161925; border: 1px solid #282E48; border-radius: 8px; padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 999999 !important; transition: opacity 0.12s ease-in-out; pointer-events: none; }
         .grid-node:hover .node-tooltip { visibility: visible; opacity: 1; }
         .grid-node:first-child .node-tooltip { left: 0; transform: translateX(0); }
         .grid-node:last-child .node-tooltip { left: auto; right: 0; transform: translateX(0); }
+        
         .tip-line { font-size: 11px; color: #E2E8F0; margin-bottom: 5px; text-align: left; white-space: nowrap; }
         .tip-line span { font-weight: 700; color: #F4D068; }
         .tip-line span.rarity-common { color: #CD7F32; }       
@@ -315,7 +322,6 @@ else:
         .claim-button.visible { opacity: 1; transform: translateY(0); }
         .claim-button:hover { background-color: #F4D068; color: #0E1117; }
         .label-badge { font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
-        .node-tooltip { visibility: hidden; opacity: 0; position: absolute; top: -120px; left: 50%; transform: translateX(-50%); width: 180px; background: #161925; border: 1px solid #282E48; border-radius: 8px; padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 99999; transition: opacity 0.12s ease-in-out; pointer-events: none; }
     </style>
 
     <div class="header-wrapper">
@@ -365,11 +371,16 @@ else:
         let selectedItem = "";
 
         function triggerSystemLogout() {
-            const streamlitDoc = window.parent.document;
-            const inputElements = streamlitDoc.querySelectorAll('input[aria-label="refresh_bridge"]');
-            if(inputElements.length > 0) {
-                inputElements[0].value = "LOGOUT_EXECUTE";
-                inputElements[0].dispatchEvent(new Event('input', { bubbles: true }));
+            // Find inputs across parent elements to target hidden bridge cleanly
+            const mainDoc = window.parent.document;
+            const targetInput = Array.from(mainDoc.querySelectorAll('input')).find(el => {
+                return el.getAttribute('aria-label') === 'refresh_bridge' || el.id?.includes('refresh_trigger');
+            });
+            
+            if(targetInput) {
+                targetInput.value = "LOGOUT_EXECUTE";
+                targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+                targetInput.dispatchEvent(new Event('change', { bubbles: true }));
             } else {
                 window.location.reload();
             }
@@ -457,10 +468,12 @@ else:
             imgPing.onload = imgPing.onerror = function() {
                 setTimeout(() => { 
                     const streamlitDoc = window.parent.document;
-                    const inputElements = streamlitDoc.querySelectorAll('input[aria-label="refresh_bridge"]');
-                    if(inputElements.length > 0) {
-                        inputElements[0].value = "REFRESH_DATA_FLOW";
-                        inputElements[0].dispatchEvent(new Event('input', { bubbles: true }));
+                    const targetInput = Array.from(streamlitDoc.querySelectorAll('input')).find(el => {
+                        return el.getAttribute('aria-label') === 'refresh_bridge' || el.id?.includes('refresh_trigger');
+                    });
+                    if(targetInput) {
+                        targetInput.value = "REFRESH_DATA_FLOW";
+                        targetInput.dispatchEvent(new Event('input', { bubbles: true }));
                     } else {
                         window.location.reload();
                     }
