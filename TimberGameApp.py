@@ -24,7 +24,7 @@ MEDALLION_COLUMNS = [
 ]
 
 LABEL_MAPPING = {
-    "Spruce": "SPRC", "Pine": "PINE", "Meranti": "MRNT", "Balsa": "BALS",
+    "Spruce": "SPRC", "Pine": "PINE", "Meranti", "BALS", "Balsa": "BALS",
     "Oak": "OAKW", "Maple": "MAPL", "Walnut": "WALN", "Cherry": "CHER",
     "Mahogany": "MHGN", "Ebony": "EBNY", "Rosewood": "RSWD", "Agarwood": "AGAR"
 }
@@ -37,9 +37,14 @@ def get_image_base64(path):
             return base64.b64encode(image_file.read()).decode()
     return None
 
-# Inject Global Cyberpunk Theme Stylesheet 
+# ====================================================================
+# ADVANCED CUSTOM STYLING - FORCING STREAMLIT ELEMENT RE-DESIGN
+# ====================================================================
+# This styles native Streamlit inputs to match our exact cyberpunk theme, 
+# completely bypassing security limits while maintaining the high-fidelity UI.
 st.markdown("""
 <style>
+    /* Global Background Override */
     .stApp {
         background-color: #0E1117;
         background-image: linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
@@ -47,7 +52,64 @@ st.markdown("""
         background-size: 24px 24px;
     }
     header, [data-testid="stHeader"] { visibility: hidden; height: 0px; }
-    div[data-testid="stBlock"] { padding: 0rem !important; }
+    
+    /* Centralizing and Styling the Native Form to look like a premium card */
+    div[data-testid="stForm"] {
+        background: #161925 !important;
+        border: 1px solid #23273A !important;
+        border-radius: 12px !important;
+        padding: 45px 40px !important;
+        max-width: 400px !important;
+        margin: 80px auto 0 auto !important;
+        box-shadow: 0 20px 45px rgba(0,0,0,0.5) !important;
+        text-align: center !important;
+    }
+    
+    /* Custom Title Styling inside the Login view */
+    .custom-login-header {
+        font-size: 22px; font-weight: 600; color: #FFFFFF; margin-bottom: 8px; letter-spacing: 0.5px;
+    }
+    .custom-login-sub {
+        font-size: 12px; color: rgba(255, 255, 255, 0.35); margin-bottom: 25px; line-height: 1.5;
+    }
+    
+    /* Input Field Redesign */
+    div[data-testid="stForm"] input {
+        background: #0E1117 !important;
+        border: 1px solid #23273A !important;
+        border-radius: 6px !important;
+        color: #FFF !important;
+        text-align: center !important;
+        font-size: 20px !important;
+        font-weight: 700 !important;
+        letter-spacing: 6px !important;
+        height: 46px !important;
+    }
+    div[data-testid="stForm"] input:focus {
+        border-color: #3D4563 !important;
+        box-shadow: 0 0 0 3px rgba(61, 69, 99, 0.2) !important;
+    }
+    
+    /* Button Redesign */
+    div[data-testid="stForm"] button {
+        width: 100% !important;
+        height: 46px !important;
+        background-color: #F4D068 !important;
+        border: none !important;
+        border-radius: 6px !important;
+        color: #0E1117 !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1.5px !important;
+        transition: all 0.15s ease !important;
+        box-shadow: 0 4px 15px rgba(244, 208, 104, 0.15) !important;
+        margin-top: 10px !important;
+    }
+    div[data-testid="stForm"] button:hover {
+        background-color: #f7d983 !important;
+        color: #0E1117 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -56,113 +118,38 @@ st.markdown("""
 # ====================================================================
 if not st.session_state["authenticated"]:
     
-    # ----------------------------------------------------------------
-    # BULLETPROOF INTERCEPT ENGINE: JavaScript postMessage Receiver
-    # ----------------------------------------------------------------
-    # Instantly listens for background login/logout data signals emitted from HTML context
-    # and processes them in Python immediately without browser address bar redirects.
-    
-    import streamlit.components.v1 as components
-    
-    # Tiny, transparent receiver engine hidden in background
-    st.markdown("""
-        <script>
-            window.addEventListener('message', function(event) {
-                if (event.data && event.data.type === 'EXEC_AUTH') {
-                    const inputs = window.parent.document.querySelectorAll('input[aria-label="auth_bridge"]');
-                    if (inputs.length > 0) {
-                        inputs[0].value = event.data.value;
-                        inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-                    }
-                }
-            });
-        </script>
-    """, unsafe_allow_html=True)
-
-    # Hidden text engine value channel link 
-    auth_bridge = st.text_input("auth_bridge", label_visibility="collapsed", key="auth_bridge_receiver")
-    
-    if auth_bridge:
-        # Fast, secure direct pipeline authorization check against Google Apps Script backend
-        try:
-            chk = requests.get(API_URL, params={"action": "fetchData", "passcode": auth_bridge}, timeout=12)
-            if chk.status_code == 200 and chk.json().get("status") == "success":
-                st.session_state["user_passcode"] = auth_bridge
-                st.session_state["username"] = chk.json().get("username", "User")
-                st.session_state["authenticated"] = True
-                st.rerun()
+    # Render native, un-blockable container blocks hidden under gorgeous custom styling rules
+    with st.form("secure_login_gateway"):
+        st.markdown('<div class="custom-login-header">Portfolio System Access</div>', unsafe_allow_html=True)
+        st.markdown('<div class="custom-login-sub">Enter your 4-digit master passcode key to authenticate transaction nodes.</div>', unsafe_allow_html=True)
+        
+        # Native input fields styled beautifully
+        input_passcode = st.text_input("Passcode", type="password", label_visibility="collapsed", max_chars=4)
+        submit_btn = st.form_submit_button("Verify Passcode")
+        
+        if submit_btn:
+            if len(input_passcode) < 4:
+                st.error("Please complete passcode entry.")
             else:
-                st.sidebar.error("Authentication Error: Passcode signature validation rejected.")
-        except Exception as e:
-            st.sidebar.error("System Matrix Timeout. Try again.")
-
-    # High-fidelity CSS UI Template card layout engine 
-    html_login_card = """
-    <style>
-        body {
-            margin: 0; padding: 0; background: transparent;
-            font-family: 'Inter', system-ui, sans-serif;
-            display: flex; align-items: center; justify-content: center; height: 85vh; overflow: hidden;
-        }
-        .login-card {
-            background: #161925; border: 1px solid #23273A; border-radius: 12px;
-            padding: 45px 40px; width: 350px; text-align: center;
-            box-shadow: 0 20px 45px rgba(0,0,0,0.5);
-            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .login-title { font-size: 22px; font-weight: 600; color: #FFFFFF; margin-bottom: 8px; letter-spacing: 0.5px; }
-        .login-subtitle { font-size: 12px; color: rgba(255, 255, 255, 0.35); margin-bottom: 32px; line-height: 1.5; }
-        .login-input { width: 100%; height: 46px; background: #0E1117; border: 1px solid #23273A; border-radius: 6px; color: #FFF; text-align: center; font-size: 18px; font-weight: 700; letter-spacing: 6px; outline: none; margin-bottom: 20px; box-sizing: border-box; transition: all 0.15s ease-in-out; }
-        .login-input:focus { border-color: #3D4563; box-shadow: 0 0 0 3px rgba(61, 69, 99, 0.2); }
-        .login-btn { width: 100%; height: 46px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 4px 15px rgba(244, 208, 104, 0.15); }
-        .login-btn:hover { transform: scale(1.015); background-color: #f7d983; }
-        .login-btn:active { transform: scale(0.99); }
-        .err-msg { font-size: 11px; font-weight: 600; color: #ef4444; margin-top: 15px; height: 14px; }
-    </style>
-    <div class="login-card">
-        <div class="login-title">Portfolio System Access</div>
-        <div class="login-subtitle">Enter your 4-digit master passcode key to authenticate transaction nodes.</div>
-        <input class="login-input" type="password" id="passCodeField" placeholder="••••" maxlength="4" onkeydown="if(event.key==='Enter') transmitAuthRequest()" />
-        <button class="login-btn" id="subBtn" onclick="transmitAuthRequest()">Verify Passcode</button>
-        <div class="err-msg" id="alertBox"></div>
-    </div>
-    <script>
-        function transmitAuthRequest() {
-            const val = document.getElementById("passCodeField").value.trim();
-            const alertBox = document.getElementById("alertBox");
-            const btn = document.getElementById("subBtn");
-            if(val.length < 4) { alertBox.innerText = "Please complete passcode entry."; return; }
-            btn.disabled = true; btn.innerText = "AUTHENTICATING..."; alertBox.innerText = "";
-            
-            // Safe message tunnel directly bypasses browser URL navigation completely
-            window.parent.postMessage({ type: 'EXEC_AUTH', value: val }, '*');
-        }
-    </script>
-    """
-    st.components.v1.html(html_login_card, height=650, scrolling=False)
+                with st.spinner("AUTHENTICATING..."):
+                    try:
+                        chk = requests.get(API_URL, params={"action": "fetchData", "passcode": input_passcode}, timeout=12)
+                        if chk.status_code == 200 and chk.json().get("status") == "success":
+                            st.session_state["user_passcode"] = input_passcode
+                            st.session_state["username"] = chk.json().get("username", "User")
+                            st.session_state["authenticated"] = True
+                            st.rerun()
+                        else:
+                            st.error("Access Denied: Passcode signature validation rejected.")
+                    except Exception as e:
+                        st.error("System Matrix Timeout. Please check your network connection.")
 
 # ====================================================================
 # ARCHITECTURE SPLIT - INTERACTION PANEL B: VERIFIED MASTER ECOSYSTEM
 # ====================================================================
 else:
-    # Handle clean logouts requested inside the main grid environment view
-    st.markdown("""
-        <script>
-            window.addEventListener('message', function(event) {
-                if (event.data && event.data.type === 'EXEC_LOGOUT') {
-                    const inputs = window.parent.document.querySelectorAll('input[aria-label="logout_bridge"]');
-                    if (inputs.length > 0) {
-                        inputs[0].value = 'DISCONNECT';
-                        inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-                    }
-                }
-            });
-        </script>
-    """, unsafe_allow_html=True)
-    
-    logout_bridge = st.text_input("logout_bridge", label_visibility="collapsed", key="logout_bridge_receiver")
-    if logout_bridge == "DISCONNECT":
+    # Sidebar logout feature works perfectly without iframe-to-parent dependencies
+    if st.sidebar.button("🔓 Terminal Logout"):
         st.session_state["authenticated"] = False
         st.session_state["user_passcode"] = ""
         st.session_state["username"] = "Guest"
@@ -199,21 +186,7 @@ else:
         body {
             margin: 0; padding: 25px 0 0 0; background: transparent;
             font-family: 'Inter', system-ui, sans-serif;
-            position: relative;
         }
-        
-        .logout-corner-node {
-            position: absolute; top: 22px; right: 25px;
-            background: rgba(22, 25, 37, 0.85); border: 1px solid #23273A;
-            border-radius: 4px; padding: 6px 14px;
-            color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.75px; cursor: pointer;
-            transition: all 0.15s ease-in-out; text-decoration: none;
-        }
-        .logout-corner-node:hover {
-            border-color: #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.05);
-        }
-
         .portfolio-title { text-align: center; font-size: 24px; font-weight: 600; color: #FFFFFF; margin-bottom: 8px; }
         .portfolio-intro { text-align: center; max-width: 800px; margin: 0 auto 20px auto; font-size: 13px; line-height: 1.6; color: rgba(255, 255, 255, 0.25); }
         .portfolio-intro span { color: rgba(244, 208, 104, 0.4); font-weight: 600; }
@@ -267,8 +240,6 @@ else:
         .claim-button:hover { background-color: #F4D068; color: #0E1117; }
     </style>
 
-    <a class="logout-corner-node" onclick="triggerSystemDisconnect()">Logout</a>
-
     <div class="portfolio-title">Timber Medallion Portfolio — __USERNAME_UPPER__</div>
     <div class="portfolio-intro"> Master tracking dashboard powered directly by your cloud inventory records. Premium tokens scale in rarity up to the single production run <span>Agarwood Medallion</span>.</div>
 
@@ -311,10 +282,6 @@ else:
         const pool = ['Spruce', 'Pine', 'Meranti', 'Balsa', 'Oak', 'Maple', 'Walnut', 'Cherry', 'Mahogany', 'Ebony', 'Rosewood', 'Agarwood'];
         const endpoint = "__API_URL_PLACEHOLDER__";
         let selectedItem = "";
-
-        function triggerSystemDisconnect() {
-            window.parent.postMessage({ type: 'EXEC_LOGOUT' }, '*');
-        }
 
         function evaluatePinAuthorization() {
             const pinValue = document.getElementById("pinField").value.trim();
