@@ -29,7 +29,6 @@ def fetch_all_sheet_data(user_id):
         if response.status_code == 200:
             data = response.json()
             if data.get("status") == "success":
-                # FIX: Map the configurations array correctly by matching the lowercased name string
                 medallions_map = {}
                 for m in data.get("medallions", []):
                     name_key = str(m.get("Medallion", "")).strip().lower()
@@ -69,7 +68,7 @@ for wood in MEDALLION_COLUMNS:
 asset_map_js += "}"
 
 # ====================================================================
-# HTML/CSS RENDER CONTEXT (Mathematical Alignment Guardrails)
+# HTML/CSS RENDER CONTEXT (Perfect Sizing & Scaling Uniformity)
 # ====================================================================
 html_base_template = """
 <style>
@@ -85,10 +84,10 @@ html_base_template = """
     .casement-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; padding: 0 15px; }
     .grid-node { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
     
-    /* Strict dimensions with box-sizing to force identical visual sizes across borders & assets */
+    /* Strict matching frames */
     .image-frame { 
-        width: 62px; 
-        height: 62px; 
+        width: 60px; 
+        height: 60px; 
         display: flex; 
         align-items: center; 
         justify-content: center; 
@@ -96,19 +95,19 @@ html_base_template = """
         box-sizing: border-box; 
     }
     
-    /* Object-fit contain scales up the asset cleanly if it has native file boundaries */
+    /* Active images scaled to maximum capacity within frame bounds */
     .image-frame img { 
-        width: 62px; 
-        height: 62px; 
+        width: 100%;
+        height: 100%;
         object-fit: contain; 
         transition: transform 0.15s ease-in-out; 
         box-sizing: border-box;
     }
     
-    /* Box-sizing ensures the 2px border stays INSIDE the 62px space rather than blowing it up */
+    /* Lock placeholders shrunk down with box-sizing to visually look identical to raw files */
     .lock-node { 
-        width: 62px; 
-        height: 62px; 
+        width: 52px; 
+        height: 52px; 
         border-radius: 50%; 
         border: 2px dashed #23273A; 
         background: #161925; 
@@ -116,7 +115,7 @@ html_base_template = """
         align-items: center; 
         justify-content: center; 
         color: #3D4563; 
-        font-size: 14px; 
+        font-size: 11px; /* Smaller font to balanced proportions */
         transition: transform 0.15s ease-in-out; 
         box-sizing: border-box; 
     }
@@ -255,8 +254,6 @@ for wood_name in MEDALLION_COLUMNS:
     lookup_key = wood_name.strip().lower()
     
     owned = int(live_inventory.get(lookup_key, 0))
-    
-    # FIX: We now fetch by our lowercased lookup key to guarantee exact sheet mapping matches
     sheet_row = live_data.get(lookup_key, None)
     rarity_class = ""
     
