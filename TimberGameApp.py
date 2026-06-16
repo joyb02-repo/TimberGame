@@ -77,12 +77,12 @@ for wood in MEDALLION_COLUMNS:
 asset_map_js += "}"
 
 # ====================================================================
-# HTML/CSS RENDER CONTEXT (Optimized spacing for tighter layout)
+# HTML/CSS RENDER CONTEXT (Adjusted top padding for hover tooltip safety)
 # ====================================================================
 html_base_template = """
 <style>
     body {
-        margin: 0; padding: 10px 0 0 0; background-color: #0E1117;
+        margin: 0; padding: 25px 0 0 0; background-color: #0E1117;
         background-image: linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
                           linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
         background-size: 24px 24px; font-family: 'Inter', system-ui, sans-serif;
@@ -285,5 +285,5 @@ html_elements = html_elements.replace("__COLLECTED_PLACEHOLDER__", summary_colle
 html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
 html_elements = html_elements.replace("__USERNAME_PLACEHOLDER__", st.session_state["username"])
 
-# Adjusted height to 730 to cleanly contain the pulled-up assets
-st.components.v1.html(html_elements, height=730, scrolling=False)
+# Adjusted height to 750 to accommodate the extra safety gap at the top
+st.components.v1.html(html_elements, height=750, scrolling=False)
