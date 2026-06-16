@@ -68,7 +68,7 @@ st.markdown("""
         padding: 40px 45px !important;
         max-width: 440px !important;
         width: 440px !important;
-        margin: 60px auto 0 auto !important;
+        margin: 20px auto 0 auto !important;
         box-shadow: 0 20px 45px rgba(0,0,0,0.5) !important;
         text-align: center !important;
         box-sizing: border-box !important;
