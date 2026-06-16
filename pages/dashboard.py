@@ -40,13 +40,10 @@ st.markdown("""
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 20px !important; padding-bottom: 10px !important; max-width: 100% !important; }
     
-    /* 🎯 UNFAILABLE ADAPTIVE HIDER: Targets the layout blocks ONLY if they contain the sys_route_store_btn key */
+    /* 🎯 PERFECT REVERSED HIDER: Vaporizes slot 1 (Route Store) completely, leaves slot 2 untouched */
     button[key="sys_route_store_btn"],
     div:has(> button[key="sys_route_store_btn"]),
-    [data-testid="stVerticalBlockRoot"] > div > div > div:has(button[key="sys_route_store_btn"]),
-    [data-testid="stVerticalBlock"] > div:has(button[key="sys_route_store_btn"]),
-    [data-testid="stVerticalBlock"] > div:nth-child(1):has(button[key="sys_route_store_btn"]),
-    [data-testid="stVerticalBlock"] > div:nth-child(2):has(button[key="sys_route_store_btn"]) {
+    [data-testid="stVerticalBlock"] > div:nth-child(1) {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -66,14 +63,14 @@ st.markdown("""
 # SYSTEM BACKEND PROCESSORS - TOP LEVEL
 # ====================================================================
 
-# This button stays fully visible, clean, and interactive at the top left!
+# This is child slot 1 - targeted and hidden by our updated CSS rule
+if st.button("Route Store", key="sys_route_store_btn"):
+    st.switch_page("pages/store.py")
+
+# This is child slot 2 - pristine, visible, and fully interactive
 if st.button("Update Data 🔄", key="sys_refresh_btn"):
     st.cache_data.clear()
     st.rerun()
-
-# This button is rendered right next to it, but our smart key conditional vaporizes it instantly.
-if st.button("Route Store", key="sys_route_store_btn"):
-    st.switch_page("pages/store.py")
 
 
 def get_image_base64(path):
