@@ -5,7 +5,6 @@ import base64
 
 API_URL = st.secrets["API_URL"]
 
-# Establish default user context
 if "username" not in st.session_state:
     st.session_state["username"] = "joyb02"
 
@@ -33,15 +32,13 @@ def process_claim_to_google_sheets(item_name):
     except Exception as e:
         st.error(f"Failed to record mined item to cloud sheet: {e}")
 
-# Check the input widget status changes
 if "hidden_claim_input" in st.session_state and st.session_state["hidden_claim_input"]:
     claim_target = st.session_state["hidden_claim_input"]
-    st.session_state["hidden_claim_input"] = "" # Clear state
+    st.session_state["hidden_claim_input"] = "" 
     process_claim_to_google_sheets(claim_target)
 
 @st.cache_data(ttl=1)
 def fetch_all_sheet_data(user_id):
-    """Queries details, summary values, and inventories specific to the active user."""
     try:
         payload = {"action": "fetchData", "username": user_id}
         response = requests.post(API_URL, json=payload, timeout=15)
@@ -66,13 +63,11 @@ def get_image_base64(path):
             return base64.b64encode(image_file.read()).decode()
     return None
 
-# Load up dataset bound explicitly to current user row configuration
 live_data, live_inventory, summary_value, summary_collected = fetch_all_sheet_data(st.session_state["username"])
 
 if not summary_value.strip().startswith("$") and "Loading" not in summary_value:
     summary_value = f"${summary_value.strip()}"
 
-# Gather asset maps
 asset_map_js = "{"
 for wood in MEDALLION_COLUMNS:
     b64 = get_image_base64(f"assets/{wood.lower()}.png")
@@ -81,7 +76,7 @@ for wood in MEDALLION_COLUMNS:
 asset_map_js += "}"
 
 # ====================================================================
-# HTML/CSS RENDER CONTEXT (Using safe placeholder replacement strings)
+# HTML/CSS RENDER CONTEXT
 # ====================================================================
 html_base_template = """
 <style>
@@ -109,7 +104,7 @@ html_base_template = """
     .tip-line { font-size: 11px; color: #E2E8F0; margin-bottom: 5px; text-align: left; white-space: nowrap; }
     .tip-line span { font-weight: 700; color: #F4D068; }
     .tip-line span.rarity-common { color: #CD7F32; }       
-    .tip-line span.rarity-uncommon { color: #C0C0C0; }}     
+    .tip-line span.rarity-uncommon { color: #C0C0C0; }     
     .tip-line span.rarity-rare { color: #3b82f6; }         
     .tip-line span.rarity-epic { color: #a855f7; }         
     .tip-line span.rarity-legendary { color: #f59e0b; }    
@@ -135,7 +130,7 @@ html_base_template = """
 </style>
 
 <div class="portfolio-title">Timber Medallion Portfolio</div>
-<div class="portfolio-intro"> Master tracking dashboard powered directly by your cloud inventory records. Premium tokens scale in rarity up to the single production run <span>Agarwood Medallion</span>.</div>
+<div class="portfolio-intro">Master tracking dashboard for user <span>__USERNAME_PLACEHOLDER__</span>. Premium tokens scale in rarity up to the ultra-mythic Agarwood Medallion.</div>
 
 <div class="casement-grid">
 __GRID_ITEMS_PLACEHOLDER__
@@ -221,7 +216,6 @@ __GRID_ITEMS_PLACEHOLDER__
 </script>
 """
 
-# Dynamic generation of sub-elements
 grid_elements_html = ""
 for wood_name in MEDALLION_COLUMNS:
     display_label = wood_name[:5].upper()
@@ -269,16 +263,14 @@ for wood_name in MEDALLION_COLUMNS:
     </div>
     """
 
-# Safely inject values into template using string replacement (bypassing f-string parsing bugs)
 html_elements = html_base_template.replace("__GRID_ITEMS_PLACEHOLDER__", grid_elements_html)
 html_elements = html_elements.replace("__VALUE_PLACEHOLDER__", summary_value)
 html_elements = html_elements.replace("__COLLECTED_PLACEHOLDER__", summary_collected)
 html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
+html_elements = html_elements.replace("__USERNAME_PLACEHOLDER__", st.session_state["username"])
 
-# Render component layout frame
 st.components.v1.html(html_elements, height=770, scrolling=False, key="medallion_mesh_component")
 
-# Hidden inputs capturing secure postMessage tracking updates from JavaScript
 st.text_input("", key="hidden_claim_input", label_visibility="collapsed")
 st.markdown(
     "<style>div[data-testid='stTextInput'] {display:none !important;}</style>", 
