@@ -4,7 +4,7 @@ import os
 import base64
 
 # ====================================================================
-# PLATINUM MASTER ARCHITECTURE - PRODUCTION READY REPAIR
+# PLATINUM MASTER PRODUCTION ARCHITECTURE (ACTIVE)
 # ====================================================================
 
 API_URL = st.secrets["API_URL"]
@@ -19,25 +19,6 @@ MEDALLION_COLUMNS = [
 ]
 
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide")
-
-# ====================================================================
-# PHASE 1: SERVER-SIDE TRANSACTION HANDLER (EXECUTED ON REFRESH)
-# ====================================================================
-if "claim_item" in st.query_params:
-    target_mined = st.query_params["claim_item"]
-    try:
-        payload = {
-            "action": "mineMedallion", 
-            "item": target_mined, 
-            "username": st.session_state["username"]
-        }
-        res = requests.post(API_URL, json=payload, timeout=15)
-        if res.status_code == 200:
-            st.cache_data.clear() 
-            st.query_params.clear() 
-            st.rerun() 
-    except Exception as e:
-        st.error(f"Failed to record mined item to cloud sheet: {e}")
 
 @st.cache_data(ttl=1)
 def fetch_all_sheet_data(user_id):
@@ -81,7 +62,7 @@ for wood in MEDALLION_COLUMNS:
 asset_map_js += "}"
 
 # ====================================================================
-# HTML/CSS RENDER CONTEXT (Original Design & Alignment Intact)
+# HTML/CSS RENDER CONTEXT (Original Layout & Styles 100% Preserved)
 # ====================================================================
 html_base_template = """
 <style>
@@ -134,7 +115,11 @@ html_base_template = """
     .claim-button:hover { background-color: #F4D068; color: #0E1117; }
 </style>
 
-<a id="breakoutLink" target="_parent" style="display:none;"></a>
+<form id="sheetBridgeForm" action="__API_URL_PLACEHOLDER__" method="POST" target="_parent" style="display:none;">
+    <input type="hidden" name="action" value="mineMedallion">
+    <input type="hidden" name="username" value="__USERNAME_PLACEHOLDER__">
+    <input type="hidden" name="item" id="formItemField">
+</form>
 
 <div class="portfolio-title">Timber Medallion Portfolio</div>
 <div class="portfolio-intro"> Master tracking dashboard powered directly by your cloud inventory records. Premium tokens scale in rarity up to the single production run <span>Agarwood Medallion</span>.</div>
@@ -214,13 +199,9 @@ __GRID_ITEMS_PLACEHOLDER__
         claimBtn.disabled = true;
         claimBtn.innerText = "Saving...";
         
-        // Target parent window layout by executing click event on native target link
-        const link = document.getElementById('breakoutLink');
-        const curUrl = new URL(window.parent.location.href);
-        curUrl.searchParams.set("claim_item", selectedItem);
-        
-        link.href = curUrl.toString();
-        link.click();
+        // Populate form inputs and trigger native form submit out to the parent view
+        document.getElementById('formItemField').value = selectedItem;
+        document.getElementById('sheetBridgeForm').submit();
     }
 </script>
 """
@@ -285,8 +266,11 @@ html_elements = html_base_template.replace("__GRID_ITEMS_PLACEHOLDER__", grid_el
 html_elements = html_elements.replace("__VALUE_PLACEHOLDER__", summary_value)
 html_elements = html_elements.replace("__COLLECTED_PLACEHOLDER__", summary_collected)
 html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
+html_elements = html_elements.replace("__USERNAME_PLACEHOLDER__", st.session_state["username"])
+html_elements = html_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
 
 st.components.v1.html(html_elements, height=750, scrolling=False)
+
 
 # ====================================================================
 # ARCHIVAL RECOVERY STORAGE (GOLD MASTER - INACTIVE ARCHIVE)
