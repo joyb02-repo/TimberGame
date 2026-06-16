@@ -28,20 +28,23 @@ st.markdown("""
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 20px !important; padding-bottom: 10px !important; max-width: 100% !important; }
     
-    /* Absolute Nuke: Vaporizes the first structural container child (Route Store) completely */
-    [data-testid="stVerticalBlock"] > div:nth-child(1),
+    /* 🎯 PERFECT INVISIBLE BRIDGE: Keeps the button alive for JS clicks, but leaves 0px footprint on screen */
+    .hidden-bridge-container,
+    .hidden-bridge-container *,
     button[key="sys_route_store_btn"],
     div:has(> button[key="sys_route_store_btn"]) {
-        display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
         height: 0px !important;
         width: 0px !important;
         max-height: 0px !important;
-        position: absolute !important;
+        max-width: 0px !important;
         padding: 0 !important;
         margin: 0 !important;
         border: none !important;
+        position: absolute !important;
+        left: -9999px !important;
+        top: -9999px !important;
         pointer-events: none !important;
     }
 </style>
@@ -64,14 +67,17 @@ LABEL_MAPPING = {
 # SYSTEM BACKEND PROCESSORS - TOP LEVEL
 # ====================================================================
 
-# This is child slot 1 - Permanently vaporized by the top-level CSS block
-
-
-# This is child slot 2 - Stays 100% clean, visible, and functional
+# 1. Update Data Actuator: Pristine, visible, and fully interactive
 if st.button("Update Data 🔄", key="sys_refresh_btn"):
     st.cache_data.clear()
     st.rerun()
 
+# 2. Invisible Router Bridge: Living inside a completely zeroed-out wrapper 
+# that can't disrupt layout flow, but remains fully targetable by JavaScript.
+st.markdown('<div class="hidden-bridge-container">', unsafe_allow_html=True)
+if st.button("Route Store", key="sys_route_store_btn"):
+    st.switch_page("pages/store.py")
+st.markdown('</div>', unsafe_allow_html=True)
 
 def get_image_base64(path):
     if os.path.exists(path):
