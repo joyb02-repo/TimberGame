@@ -1,6 +1,6 @@
 # ====================================================================
 # PROJECT: TIMBER MEDALLION PORTFOLIO SYSTEM
-# FILE: login.py (PERFECTLY CENTERED GATEWAY CONFIGURATION)
+# FILE: login.py (FULL-WIDTH STRETCHED GATEWAY)
 # ====================================================================
 
 import streamlit as st
@@ -41,7 +41,7 @@ def get_http_session():
     session.mount("http://", adapter)
     return session
 
-# Global UI Inject Style Framework - Absolute Centerment Alignments
+# Global UI Inject Style Framework - Block Stretch Layout
 st.markdown("""
 <style>
     .stApp {
@@ -52,7 +52,7 @@ st.markdown("""
     }
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     
-    /* Login Box Frame: Moved significantly higher up on the screen */
+    /* Login Box Frame: Anchored at a uniform width of 440px */
     div[data-testid="stForm"] {
         background: #161925 !important;
         border: 1px solid #23273A !important;
@@ -66,6 +66,7 @@ st.markdown("""
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
+        box-sizing: border-box !important;
     }
     
     /* Massive Logo Container Configuration */
@@ -75,7 +76,7 @@ st.markdown("""
     .custom-login-header { font-size: 22px; font-weight: 600; color: #FFFFFF; margin-bottom: 10px; width: 100%; text-align: center !important; letter-spacing: 0.5px; font-family: 'Inter', sans-serif; }
     .custom-login-sub { font-size: 13px; color: rgba(255, 255, 255, 0.4); margin-bottom: 30px; width: 100%; text-align: center !important; line-height: 1.5; font-family: 'Inter', sans-serif; }
     
-    /* Center text inputs and hidden error frames perfectly */
+    /* Passcode Inputs */
     div[data-testid="stForm"] div[data-testid="stTextInput"] { width: 160px !important; margin: 0 auto 5px auto !important; }
     div[data-testid="stForm"] input {
         background-color: #0E1117 !important; border: 1px solid #23273A !important; border-radius: 6px !important;
@@ -83,20 +84,28 @@ st.markdown("""
         letter-spacing: 6px !important; height: 46px !important; box-sizing: border-box !important; padding: 0px !important;
     }
     
-    /* absolute override to bypass Streamlit's left-aligned layout constraints */
+    /* STRETCHED BUTTON LOGIC: Spans the container width minus layout paddings */
     div[data-testid="stForm"] div.stFormSubmitButton {
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
+        display: block !important;
         width: 100% !important;
-        text-align: center !important;
-        margin: 20px auto 0 auto !important;
+        margin: 20px 0 0 0 !important;
+        padding: 0 !important;
     }
     
     div[data-testid="stForm"] button[kind="primaryFormSubmit"] {
-        width: 220px !important; height: 44px !important; background-color: #F4D068 !important; border: none !important; border-radius: 6px !important;
-        color: #0E1117 !important; font-size: 13px !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 1.5px !important;
-        margin: 0 auto !important; display: block !important;
+        width: 100% !important; 
+        height: 46px !important; 
+        background-color: #F4D068 !important; 
+        border: none !important; 
+        border-radius: 6px !important;
+        color: #0E1117 !important; 
+        font-size: 13px !important; 
+        font-weight: 700 !important; 
+        text-transform: uppercase !important; 
+        letter-spacing: 1.5px !important;
+        text-align: center !important;
+        margin: 0 !important;
+        display: block !important;
     }
     
     /* Clean text line resets */
@@ -120,7 +129,6 @@ with st.form("secure_login_gateway"):
         else:
             with st.spinner("AUTHENTICATING..."):
                 try:
-                    # Leverage the persistent connection pool to defend against the network dropout anomalies
                     http_client = get_http_session()
                     chk = http_client.get(API_URL, params={"action": "fetchData", "passcode": input_passcode}, timeout=15)
                     
@@ -132,5 +140,4 @@ with st.form("secure_login_gateway"):
                     else:
                         st.error("Access Denied: Passcode signature validation rejected.")
                 except Exception as e:
-                    # Network pipeline protection fallback
                     st.error("System Matrix Timeout. Please check your network connection.")
