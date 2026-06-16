@@ -10,6 +10,14 @@ import base64
 
 API_URL = st.secrets["API_URL"]
 
+# Check for global logouts requested via clean URL parameter redirection strings
+if "logout" in st.query_params:
+    st.query_params.clear()
+    st.session_state["authenticated"] = False
+    st.session_state["user_passcode"] = ""
+    st.session_state["username"] = "Guest"
+    st.rerun()
+
 # Initialize session structures
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
@@ -101,7 +109,7 @@ if not st.session_state["authenticated"]:
     </style>
     <div class="login-card">
         <div class="login-title">Portfolio System Access</div>
-        <div class="login-subtitle font-family: 'Inter'">Enter your 4-digit master passcode key to authenticate transaction nodes.</div>
+        <div class="login-subtitle">Enter your 4-digit master passcode key to authenticate transaction nodes.</div>
         <input class="login-input" type="password" id="passCodeField" placeholder="••••" maxlength="4" onkeydown="if(event.key==='Enter') transmitAuthRequest()" />
         <button class="login-btn" id="subBtn" onclick="transmitAuthRequest()">Verify Passcode</button>
         <div class="err-msg" id="alertBox"></div>
@@ -113,7 +121,6 @@ if not st.session_state["authenticated"]:
             const btn = document.getElementById("subBtn");
             if(val.length < 4) { alertBox.innerText = "Please complete passcode entry."; return; }
             btn.disabled = true; btn.innerText = "AUTHENTICATING..."; alertBox.innerText = "";
-            // Pipe query keys directly up through the parent instance architecture seamlessly
             window.parent.location.search = "?try_passcode=" + encodeURIComponent(val);
         }
     </script>
@@ -155,7 +162,22 @@ else:
         body {
             margin: 0; padding: 25px 0 0 0; background: transparent;
             font-family: 'Inter', system-ui, sans-serif;
+            position: relative;
         }
+        
+        /* Fixed Absolute Corner Logout Node Placement */
+        .logout-corner-node {
+            position: absolute; top: 22px; right: 25px;
+            background: rgba(22, 25, 37, 0.85); border: 1px solid #23273A;
+            border-radius: 4px; padding: 6px 14px;
+            color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.75px; cursor: pointer;
+            transition: all 0.15s ease-in-out; text-decoration: none;
+        }
+        .logout-corner-node:hover {
+            border-color: #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.05);
+        }
+
         .portfolio-title { text-align: center; font-size: 24px; font-weight: 600; color: #FFFFFF; margin-bottom: 8px; }
         .portfolio-intro { text-align: center; max-width: 800px; margin: 0 auto 20px auto; font-size: 13px; line-height: 1.6; color: rgba(255, 255, 255, 0.25); }
         .portfolio-intro span { color: rgba(244, 208, 104, 0.4); font-weight: 600; }
@@ -209,6 +231,8 @@ else:
         .claim-button:hover { background-color: #F4D068; color: #0E1117; }
     </style>
 
+    <a class="logout-corner-node" onclick="triggerSystemDisconnect()">Logout</a>
+
     <div class="portfolio-title">Timber Medallion Portfolio — __USERNAME_UPPER__</div>
     <div class="portfolio-intro"> Master tracking dashboard powered directly by your cloud inventory records. Premium tokens scale in rarity up to the single production run <span>Agarwood Medallion</span>.</div>
 
@@ -251,6 +275,11 @@ else:
         const pool = ['Spruce', 'Pine', 'Meranti', 'Balsa', 'Oak', 'Maple', 'Walnut', 'Cherry', 'Mahogany', 'Ebony', 'Rosewood', 'Agarwood'];
         const endpoint = "__API_URL_PLACEHOLDER__";
         let selectedItem = "";
+
+        function triggerSystemDisconnect() {
+            // Signal global application structure logout pipeline
+            window.parent.location.search = "?logout=true";
+        }
 
         function evaluatePinAuthorization() {
             const pinValue = document.getElementById("pinField").value.trim();
