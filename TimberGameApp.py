@@ -23,10 +23,7 @@ st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide")
 def fetch_all_sheet_data(user_id):
     """Queries configurations and active inventories using an open GET stream request."""
     try:
-        # We switch to standard URL parameters via GET to bypass Google's server bot blocks
         params = {"action": "fetchData", "username": user_id}
-        
-        # allow_redirects=True is vital for Google Sheets API endpoints
         response = requests.get(API_URL, params=params, timeout=15, allow_redirects=True)
         
         if response.status_code == 200:
@@ -41,7 +38,6 @@ def fetch_all_sheet_data(user_id):
                 
                 return medallions_map, inventory_counts, val, coll
             else:
-                # Debug display if Google returns an internal parsing or sheet-missing error
                 st.sidebar.error(f"Google Script Error: {data.get('message')}")
     except Exception as e:
         st.sidebar.error(f"Connection Exception: {str(e)}")
@@ -69,7 +65,7 @@ for wood in MEDALLION_COLUMNS:
 asset_map_js += "}"
 
 # ====================================================================
-# HTML/CSS RENDER CONTEXT (Original Design & Alignment 100% Preserved)
+# HTML/CSS RENDER CONTEXT (Standardized Rigid Grid Geometry)
 # ====================================================================
 html_base_template = """
 <style>
@@ -84,9 +80,14 @@ html_base_template = """
     .portfolio-intro span { color: rgba(244, 208, 104, 0.4); font-weight: 600; }
     .casement-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; padding: 0 15px; }
     .grid-node { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-    .image-frame { width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
-    .image-frame img, .lock-node { width: 100%; height: 100%; object-fit: contain; transition: transform 0.15s ease-in-out; }
-    .lock-node { width: 52px; height: 52px; border-radius: 50%; border: 2px dashed #23273A; background: #161925; display: flex; align-items: center; justify-content: center; color: #3D4563; font-size: 13px; }
+    
+    /* Strict sizing constraints ensure identical node bounding shapes */
+    .image-frame { width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; box-sizing: border-box; }
+    .image-frame img { width: 62px; height: 62px; object-fit: contain; transition: transform 0.15s ease-in-out; }
+    
+    /* Form matches image bounding size natively to stop uneven rendering shrinking loops */
+    .lock-node { width: 62px; height: 62px; border-radius: 50%; border: 2px dashed #23273A; background: #161925; display: flex; align-items: center; justify-content: center; color: #3D4563; font-size: 14px; transition: transform 0.15s ease-in-out; box-sizing: border-box; }
+    
     .grid-node:hover .image-frame img, .grid-node:hover .lock-node { transform: scale(1.15); }
     .quantity-badge { font-size: 12px; font-weight: 700; color: #F4D068; margin-bottom: 3px; min-height: 15px; }
     .label-badge { font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
