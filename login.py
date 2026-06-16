@@ -187,7 +187,7 @@ if logo_b64:
     st.markdown(f'<div class="login-logo-container"><img src="data:image/png;base64,{logo_b64}" /></div>', unsafe_allow_html=True)
 
 st.markdown('<div class="custom-login-header">Medallion Management Portal</div>', unsafe_allow_html=True)
-st.markdown('<div class="custom-login-sub">Enter your 4-digit master passcode key to authenticate transaction nodes.</div>', unsafe_allow_html=True)
+st.markdown('<div class="custom-login-sub">Enter your 4-digit master passcode key to access your Medallion Management Portal dashboard.</div>', unsafe_allow_html=True)
 
 input_passcode = st.text_input("Passcode", type="password", label_visibility="collapsed", max_chars=4)
 submit_btn = st.button("Verify Passcode")
