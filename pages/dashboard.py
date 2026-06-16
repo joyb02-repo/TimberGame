@@ -1,12 +1,13 @@
 # ====================================================================
 # PROJECT: TIMBER MEDALLION PORTFOLIO SYSTEM
-# FILE: pages/dashboard.py (COMPACT FULL-GRID PORT)
+# FILE: pages/dashboard.py (COMPACT FULL-GRID PORT WITH WEIGHTED ODDS)
 # ====================================================================
 
 import streamlit as st
 import requests
 import os
 import base64
+import json  # Added to safely stringify lists for JavaScript consumption
 
 # Security Wall: Redirect if not authenticated via root login file
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
@@ -83,6 +84,27 @@ for wood in MEDALLION_COLUMNS:
     b64 = get_image_base64(f"assets/{wood.lower()}.png")
     if b64: asset_map_js += f"'{wood}': 'data:image/png;base64,{b64}',"
 asset_map_js += "}"
+
+# ====================================================================
+# DYNAMIC WEIGHT PROBABILITY BUILDING BLOCK (COLUMN E EXTRACTION)
+# ====================================================================
+js_pool_items = []
+js_pool_weights = []
+
+for wood_name in MEDALLION_COLUMNS:
+    lookup_key = wood_name.strip().lower()
+    sheet_row = live_data.get(lookup_key, None)
+    weight_value = 1.0  # Fallback baseline weight if parsing breaks
+    
+    if sheet_row and "Probability" in sheet_row:
+        prob_str = str(sheet_row["Probability"]).replace("%", "").strip()
+        try:
+            weight_value = float(prob_str)
+        except ValueError:
+            weight_value = 1.0
+            
+    js_pool_items.append(wood_name)
+    js_pool_weights.append(weight_value)
 
 # ====================================================================
 # IFRAME ARCHITECTURE COMPACT RE-INJECTION (PLATINUM DASHBOARD STYLE)
@@ -195,12 +217,12 @@ html_base_template = """
 
 <script>
     const assetLibrary = __ASSET_MAP_PLACEHOLDER__;
-    const pool = ['Spruce', 'Pine', 'Meranti', 'Balsa', 'Oak', 'Maple', 'Walnut', 'Cherry', 'Mahogany', 'Ebony', 'Rosewood', 'Agarwood'];
+    const pool = __POOL_ITEMS_PLACEHOLDER__;
+    const weights = __POOL_WEIGHTS_PLACEHOLDER__;
     const endpoint = "__API_URL_PLACEHOLDER__";
     let selectedItem = "";
 
     function executeSystemLogout() {
-        // Break out of the sandboxed iframe wrapper cleanly to trigger target query params
         if (window.top && window.top.location) {
             window.top.location.href = window.top.location.origin + window.top.location.pathname + '?logout=true';
         } else {
@@ -227,16 +249,43 @@ html_base_template = """
         } catch(e) {}
     }
 
+    // Custom Cumulative JavaScript Weight Picker to handle dynamic weights accurately
+    function selectWeightedWinner(items, itemWeights) {
+        const totalWeight = itemWeights.reduce((acc, w) => acc + w, 0);
+        let randomNum = Math.random() * totalWeight;
+        for (let i = 0; i < items.length; i++) {
+            if (randomNum < itemWeights[i]) {
+                return items[i];
+            }
+            randomNum -= itemWeights[i];
+        }
+        return items[items.length - 1]; // Safe fallback element
+    }
+
     function runMiningSequence() {
         const box = document.getElementById('cyclerBox'); const img = document.getElementById('cyclerImg');
         const wrapper = document.getElementById('outcomeWrapper'); const itemTxt = document.getElementById('itemNameTxt'); const claimBtn = document.getElementById('claimBtn');
         document.getElementById('mineBtn').disabled = true; wrapper.style.opacity = "0"; claimBtn.classList.remove('visible'); box.style.display = "flex";
-        let counter = 0; let speed = 40; selectedItem = pool[Math.floor(Math.random() * pool.length)];
+        
+        let counter = 0; 
+        let speed = 40; 
+        
+        // Selects the winner instantly behind the scenes using dynamic spreadsheet data weights
+        selectedItem = selectWeightedWinner(pool, weights);
+        
         function cycle() {
-            const currentItem = pool[counter % pool.length]; if (assetLibrary[currentItem]) img.src = assetLibrary[currentItem]; counter++;
-            if (speed < 320) { speed += 16; setTimeout(cycle, speed); } else {
+            const currentItem = pool[counter % pool.length]; 
+            if (assetLibrary[currentItem]) img.src = assetLibrary[currentItem]; 
+            counter++;
+            
+            if (speed < 320) { 
+                speed += 16; 
+                setTimeout(cycle, speed); 
+            } else {
                 img.src = assetLibrary[selectedItem];
-                itemTxt.innerText = selectedItem.toUpperCase() + "!"; wrapper.style.opacity = "1"; claimBtn.classList.add('visible');
+                itemTxt.innerText = selectedItem.toUpperCase() + "!"; 
+                wrapper.style.opacity = "1"; 
+                claimBtn.classList.add('visible');
             }
         }
         setTimeout(cycle, speed);
@@ -326,6 +375,10 @@ html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
 html_elements = html_elements.replace("__USERNAME_UPPER__", st.session_state["username"].upper())
 html_elements = html_elements.replace("__PASSCODE_RAW__", st.session_state["user_passcode"])
 html_elements = html_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
+
+# Inject the weighted item pool parameters cleanly into the JavaScript framework space
+html_elements = html_elements.replace("__POOL_ITEMS_PLACEHOLDER__", json.dumps(js_pool_items))
+html_elements = html_elements.replace("__POOL_WEIGHTS_PLACEHOLDER__", json.dumps(js_pool_weights))
 
 # Expanded global rendering canvas height context to 900px to fully contain claim triggers cleanly
 st.components.v1.html(html_elements, height=900, scrolling=False)
