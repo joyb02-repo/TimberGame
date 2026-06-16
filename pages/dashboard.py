@@ -1,6 +1,6 @@
 # ====================================================================
 # PROJECT: TIMBER MEDALLION PORTFOLIO SYSTEM
-# FILE: pages/dashboard.py (UPDATED WITH INTERACTIVE STORE LINK)
+# FILE: pages/dashboard.py (UPDATED VISIBILITY SYSTEM OVERLAYS)
 # ====================================================================
 
 import streamlit as st
@@ -28,6 +28,7 @@ LABEL_MAPPING = {
     "Mahogany": "MHGN", "Ebony": "EBNY", "Rosewood": "RSWD", "Agarwood": "AGAR"
 }
 
+# Advanced Global Stylesheet Injection
 st.markdown("""
 <style>
     .stApp {
@@ -39,29 +40,35 @@ st.markdown("""
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 20px !important; padding-bottom: 10px !important; max-width: 100% !important; }
     
-    /* Global ironclad rule: Nuke anything containing or matching these system keys */
-    [data-testid="stElementContainer"]:has(button[key*="sys_"]),
-    div.element-container:has(button[key*="sys_"]),
-    button[key="sys_refresh_btn"],
-    button[key="sys_route_store_btn"] {
+    /* Ironclad targeted suppression rule for the background processor container */
+    div.hidden-system-bridge, 
+    div.hidden-system-bridge * {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
         height: 0px !important;
         width: 0px !important;
         position: absolute !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
         pointer-events: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Active listeners for iframe signals
-if st.button("Update Data 🔄", key="sys_refresh_btn"):
-    st.cache_data.clear()
-    st.rerun()
+# Encapsulating background utility hooks inside a strictly blocked CSS class container
+with st.container():
+    st.markdown('<div class="hidden-system-bridge">', unsafe_allow_html=True)
+    
+    if st.button("Update Data 🔄", key="sys_refresh_btn"):
+        st.cache_data.clear()
+        st.rerun()
 
-if st.button("Route Store", key="sys_route_store_btn"):
-    st.switch_page("pages/store.py")
+    if st.button("Route Store", key="sys_route_store_btn"):
+        st.switch_page("pages/store.py")
+        
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def get_image_base64(path):
     if os.path.exists(path):
@@ -110,7 +117,6 @@ html_base_template = """
     body { margin: 0; padding: 45px 0 0 0; background: transparent; font-family: 'Inter', sans-serif; position: relative; }
     .header-wrapper { position: relative; max-width: 100%; margin: 0 auto; padding: 0 15px; text-align: center; }
     
-    /* PROMINENT INTERACTIVE STORE BUTTON */
     .store-btn-global {
         position: absolute; top: -25px; right: 15px; height: 38px; padding: 0 20px;
         background: linear-gradient(135deg, #F4D068 0%, #e0b84c 100%); border: none; border-radius: 6px;
