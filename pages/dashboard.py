@@ -40,11 +40,13 @@ st.markdown("""
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 20px !important; padding-bottom: 10px !important; max-width: 100% !important; }
     
-    /* 🎯 GUARANTEED TARGET HIDER: Completely deletes Route Store and its container, leaves Update Data untouched */
+    /* 🎯 UNFAILABLE ADAPTIVE HIDER: Targets the layout blocks ONLY if they contain the sys_route_store_btn key */
     button[key="sys_route_store_btn"],
     div:has(> button[key="sys_route_store_btn"]),
-    [data-testid="stVerticalBlockRoot"] > div > div > div:nth-child(2),
-    [data-testid="stVerticalBlock"] > div:nth-child(2) {
+    [data-testid="stVerticalBlockRoot"] > div > div > div:has(button[key="sys_route_store_btn"]),
+    [data-testid="stVerticalBlock"] > div:has(button[key="sys_route_store_btn"]),
+    [data-testid="stVerticalBlock"] > div:nth-child(1):has(button[key="sys_route_store_btn"]),
+    [data-testid="stVerticalBlock"] > div:nth-child(2):has(button[key="sys_route_store_btn"]) {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -64,12 +66,12 @@ st.markdown("""
 # SYSTEM BACKEND PROCESSORS - TOP LEVEL
 # ====================================================================
 
-# 1. First child in the layout: Stays 100% visible, interactive, and completely unaffected!
+# This button stays fully visible, clean, and interactive at the top left!
 if st.button("Update Data 🔄", key="sys_refresh_btn"):
     st.cache_data.clear()
     st.rerun()
 
-# 2. Second child in the layout: Vaporized instantly along with its outer container
+# This button is rendered right next to it, but our smart key conditional vaporizes it instantly.
 if st.button("Route Store", key="sys_route_store_btn"):
     st.switch_page("pages/store.py")
 
