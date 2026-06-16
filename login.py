@@ -1,6 +1,6 @@
 # ====================================================================
 # PROJECT: TIMBER MEDALLION PORTFOLIO SYSTEM
-# FILE: login.py (FLAWLESSLY CENTERED HYBRID INTERFACE)
+# FILE: login.py (CLEAN MINIMAL CARD DESIGN - SPECIFIED PARAMETERS)
 # ====================================================================
 
 import streamlit as st
@@ -41,7 +41,7 @@ def get_http_session():
     session.mount("http://", adapter)
     return session
 
-# Global UI Style Framework - Enforces flawless grid centering and button stretching
+# Global UI Style Framework - Implements precise box constraints and layout cleanups
 st.markdown("""
 <style>
     .stApp {
@@ -52,13 +52,15 @@ st.markdown("""
     }
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     
-    /* Target the vertical block container inside our center column layout */
+    /* Perfect Center Column Card: Custom background token with full-width layout normalization */
     div[data-testid="stVerticalBlock"]:has(div.login-card-anchor) {
         background: #161925 !important;
         border: 1px solid #23273A !important;
         border-radius: 12px !important;
         padding: 40px 45px !important;
         width: 100% !important;
+        max-width: 440px !important;
+        margin: 60px auto 0 auto !important;
         box-shadow: 0 20px 45px rgba(0,0,0,0.5) !important;
         text-align: center !important;
         box-sizing: border-box !important;
@@ -67,22 +69,31 @@ st.markdown("""
         align-items: center !important;
     }
     
-    /* Center text modifications */
+    /* Logo adjustments */
     .login-logo-container { width: 100%; text-align: center; margin-bottom: 25px; display: flex; justify-content: center; }
     .login-logo-container img { max-height: 140px; width: auto; object-fit: contain; }
     
     .custom-login-header { font-size: 22px; font-weight: 600; color: #FFFFFF; margin-bottom: 10px; width: 100%; text-align: center !important; letter-spacing: 0.5px; font-family: 'Inter', sans-serif; }
     .custom-login-sub { font-size: 13px; color: rgba(255, 255, 255, 0.4); margin-bottom: 30px; width: 100%; text-align: center !important; line-height: 1.5; font-family: 'Inter', sans-serif; }
     
-    /* Style the Passcode component box and input text alignment */
-    div.stTextInput { width: 220px !important; margin: 0 auto 5px auto !important; }
+    /* Sized perfectly down for 4 digits flat */
+    div.stTextInput { width: 160px !important; margin: 0 auto 5px auto !important; }
     div.stTextInput input {
         background-color: #0E1117 !important; border: 1px solid #23273A !important; border-radius: 6px !important;
         color: #FFF !important; text-align: center !important; font-size: 24px !important; font-weight: 700 !important;
         letter-spacing: 6px !important; height: 46px !important; box-sizing: border-box !important;
     }
     
-    /* Stretch the button fully across the card bounds layout */
+    /* REMOVE THE 'PRESS ENTER TO SUBMIT FORM' PROMPT AND STREAMLIT TRAILING CAPTIONS */
+    div.stTextInput p, [data-testid="stWidgetInstructions"], .st-emotion-cache-164784e { 
+        display: none !important; 
+        visibility: hidden !important; 
+        height: 0px !important; 
+        margin: 0px !important; 
+        padding: 0px !important; 
+    }
+    
+    /* Stretch the golden button cleanly to match the base box width */
     div.stButton {
         width: 100% !important;
         margin: 25px 0 0 0 !important;
@@ -130,12 +141,12 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(244, 208, 104, 0.1) !important;
     }
     
-    /* Fix error messaging boundaries within the layout window */
+    /* Alert and indicator styling overrides */
     div[data-testid="stAlert"] { margin-top: 15px !important; width: 100% !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# Build proportional outer column spacers to float the box exactly into the screen center
+# Build out proportional outer column spacers to float the layout into the dead center
 left_spacer, center_target, right_spacer = st.columns([1.1, 1, 1.1])
 
 with center_target:
