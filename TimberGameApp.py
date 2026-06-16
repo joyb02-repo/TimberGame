@@ -21,11 +21,14 @@ st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide")
 
 @st.cache_data(ttl=1)
 def fetch_all_sheet_data(user_id):
-    """Queries details, summary values, and inventories specific to the active user."""
+    """Queries configurations and active inventories using an open GET stream request."""
     try:
-        # Explicit json structure used here matching our Apps Script parsing layout
-        payload = {"action": "fetchData", "username": user_id}
-        response = requests.post(API_URL, json=payload, timeout=12)
+        # We switch to standard URL parameters via GET to bypass Google's server bot blocks
+        params = {"action": "fetchData", "username": user_id}
+        
+        # allow_redirects=True is vital for Google Sheets API endpoints
+        response = requests.get(API_URL, params=params, timeout=15, allow_redirects=True)
+        
         if response.status_code == 200:
             data = response.json()
             if data.get("status") == "success":
@@ -37,8 +40,12 @@ def fetch_all_sheet_data(user_id):
                 coll = master_summary.get("MedallionsCollected", "0")
                 
                 return medallions_map, inventory_counts, val, coll
+            else:
+                # Debug display if Google returns an internal parsing or sheet-missing error
+                st.sidebar.error(f"Google Script Error: {data.get('message')}")
     except Exception as e:
-        pass
+        st.sidebar.error(f"Connection Exception: {str(e)}")
+        
     return {}, {}, "$0", "0"
 
 def get_image_base64(path):
@@ -47,7 +54,7 @@ def get_image_base64(path):
             return base64.b64encode(image_file.read()).decode()
     return None
 
-# Load up live engine balances cleanly
+# Load engine metrics cleanly
 live_data, live_inventory, summary_value, summary_collected = fetch_all_sheet_data(st.session_state["username"])
 
 if not str(summary_value).strip().startswith("$"):
@@ -196,17 +203,13 @@ __GRID_ITEMS_PLACEHOLDER__
         const targetUrl = "__API_URL_PLACEHOLDER__";
         const pingUrl = targetUrl + "?action=mineMedallion&username=" + encodeURIComponent("__USERNAME_PLACEHOLDER__") + "&item=" + encodeURIComponent(selectedItem);
         
-        // Use an Image element load target. Images are exempt from iframe cross-origin blocking rules!
         const imgPing = new Image();
-        
         imgPing.onload = imgPing.onerror = function() {
-            // Trigger parent runtime refresh the moment the cloud registers the update
             setTimeout(() => {
                 const win = (window.self !== window.top) ? window.parent : window;
                 win.location.reload();
-            }, 500);
+            }, 600);
         };
-        
         imgPing.src = pingUrl;
     }
 </script>
