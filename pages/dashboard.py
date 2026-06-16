@@ -41,13 +41,10 @@ st.markdown("""
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 20px !important; padding-bottom: 10px !important; max-width: 100% !important; }
     
-    /* THE ULTIMATE NUKE: Target the buttons and ANY parent container holding them globally */
-    button[key="sys_refresh_btn"],
-    button[key="sys_route_store_btn"],
-    div:has(> button[key="sys_refresh_btn"]),
-    div:has(> button[key="sys_route_store_btn"]),
-    [data-testid="stVerticalBlock"] > div:nth-child(1),
-    [data-testid="stVerticalBlock"] > div:nth-child(2) {
+    /* Precision target ONLY the routing bridge wrapper */
+    div.invisible-gateway,
+    div.invisible-gateway + div,
+    div:has(> .invisible-gateway) {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -57,23 +54,21 @@ st.markdown("""
         position: absolute !important;
         padding: 0 !important;
         margin: 0 !important;
-        border: none !important;
         pointer-events: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # Encapsulating background utility hooks inside a strictly blocked CSS class container
-with st.container():
-    st.markdown('<div class="hidden-system-bridge">', unsafe_allow_html=True)
-    
-    if st.button("Update Data 🔄", key="sys_refresh_btn"):
-        st.cache_data.clear()
-        st.rerun()
+if st.button("Update Data 🔄", key="sys_refresh_btn"):
+    st.cache_data.clear()
+    st.rerun()
 
+# 2. The routing button gets safely locked in an invisible box:
+with st.container():
+    st.markdown('<div class="invisible-gateway">', unsafe_allow_html=True)
     if st.button("Route Store", key="sys_route_store_btn"):
         st.switch_page("pages/store.py")
-        
     st.markdown('</div>', unsafe_allow_html=True)
 
 def get_image_base64(path):
