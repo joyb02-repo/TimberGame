@@ -17,7 +17,7 @@ MEDALLION_COLUMNS = [
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide")
 
 # ====================================================================
-# PHASE 1: NATIVE CLAIM BACKEND SYNC (NO FLAKY URL PARAMS)
+# PHASE 1: NATIVE CLAIM BACKEND SYNC
 # ====================================================================
 def process_claim_to_google_sheets(item_name):
     try:
@@ -29,15 +29,14 @@ def process_claim_to_google_sheets(item_name):
         res = requests.post(API_URL, json=payload, timeout=15)
         if res.status_code == 200:
             st.cache_data.clear() 
-            st.success(f"Successfully saved {item_name} to your spreadsheet!")
             st.rerun()
     except Exception as e:
         st.error(f"Failed to record mined item to cloud sheet: {e}")
 
-# Create a hidden native streamlit container to capture javascript callback events
-if "hidden_claim_item" in st.session_state and st.session_state["hidden_claim_item"]:
-    claim_target = st.session_state["hidden_claim_item"]
-    st.session_state["hidden_claim_item"] = None # Reset state
+# Check the input widget status changes
+if "hidden_claim_input" in st.session_state and st.session_state["hidden_claim_input"]:
+    claim_target = st.session_state["hidden_claim_input"]
+    st.session_state["hidden_claim_input"] = "" # Clear state
     process_claim_to_google_sheets(claim_target)
 
 @st.cache_data(ttl=1)
@@ -136,7 +135,7 @@ html_elements = f"""
 </style>
 
 <div class="portfolio-title">Timber Medallion Portfolio</div>
-<div class="portfolio-intro">Master tracking dashboard for user <span>{st.session_state["username"]}</span>. Premium tokens scale in rarity up to the ultra-mythic Agarwood Medallion.</div>
+<div class="portfolio-intro"> Master tracking dashboard powered directly by your cloud inventory records. Premium tokens scale in rarity up to the single production run <span>Agarwood Medallion</span>.</div>
 
 <div class="casement-grid">
 """
@@ -260,21 +259,22 @@ html_elements += f"""
         claimBtn.disabled = true;
         claimBtn.innerText = "Saving...";
         
-        // Push selectedItem data to hidden Streamlit container parent text input securely
-        window.parent.postMessage({
+        // Fixed Python escaping formatting with doubled-up curly brackets
+        window.parent.postMessage({{
             type: 'streamlit:set_widget_value',
+            from_macro: true,
             widget_id: 'hidden_claim_input',
             value: selectedItem
-        }, '*');
+        }}, '*');
     }}
 </script>
 """
 
-# Render custom HTML components layout framework
-st.components.v1.html(html_elements, height=770, scrolling=False)
+# Render custom HTML components layout framework using an explicit key handle
+st.components.v1.html(html_elements, height=770, scrolling=False, key="medallion_mesh_component")
 
-# This hidden input captures the javascript callback value securely and routes it to the script pipeline
-st.text_input("Claim Event Listener", key="hidden_claim_item", label_visibility="collapsed")
+# The hidden input element tracking channel matching widget_id exactly
+st.text_input("", key="hidden_claim_input", label_visibility="collapsed")
 st.markdown(
     "<style>div[data-testid='stTextInput'] {display:none !important;}</style>", 
     unsafe_allow_html=True
