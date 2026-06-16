@@ -81,65 +81,148 @@ for wood in MEDALLION_COLUMNS:
 asset_map_js += "}"
 
 # ====================================================================
-# HTML/CSS RENDER CONTEXT
+# HTML/CSS RENDER CONTEXT (Using safe placeholder replacement strings)
 # ====================================================================
-html_elements = f"""
+html_base_template = """
 <style>
-    body {{
+    body {
         margin: 0; padding: 50px 0 0 0; background-color: #0E1117;
         background-image: linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
                           linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
         background-size: 24px 24px; font-family: 'Inter', system-ui, sans-serif;
-    }}
-    .portfolio-title {{ text-align: center; font-size: 24px; font-weight: 600; color: #FFFFFF; margin-bottom: 12px; }}
-    .portfolio-intro {{ text-align: center; max-width: 800px; margin: 0 auto 50px auto; font-size: 13px; line-height: 1.6; color: rgba(255, 255, 255, 0.25); }}
-    .portfolio-intro span {{ color: rgba(244, 208, 104, 0.4); font-weight: 600; }}
-    .casement-grid {{ display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; padding: 0 15px; }}
-    .grid-node {{ position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }}
-    .image-frame {{ width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }}
-    .image-frame img, .lock-node {{ width: 100%; height: 100%; object-fit: contain; transition: transform 0.15s ease-in-out; }}
-    .lock-node {{ width: 52px; height: 52px; border-radius: 50%; border: 2px dashed #23273A; background: #161925; display: flex; align-items: center; justify-content: center; color: #3D4563; font-size: 13px; }}
-    .grid-node:hover .image-frame img, .grid-node:hover .lock-node {{ transform: scale(1.15); }}
-    .quantity-badge {{ font-size: 12px; font-weight: 700; color: #F4D068; margin-bottom: 3px; min-height: 15px; }}
-    .label-badge {{ font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }}
-    .node-tooltip {{ visibility: hidden; opacity: 0; position: absolute; top: -120px; left: 50%; transform: translateX(-50%); width: 180px; background: #161925; border: 1px solid #282E48; border-radius: 8px; padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 99999; transition: opacity 0.12s ease-in-out; pointer-events: none; }}
-    .grid-node:hover .node-tooltip {{ visibility: visible; opacity: 1; }}
-    .grid-node:first-child .node-tooltip {{ left: 0; transform: translateX(0); }}
-    .grid-node:last-child .node-tooltip {{ left: auto; right: 0; transform: translateX(0); }}
-    .tip-line {{ font-size: 11px; color: #E2E8F0; margin-bottom: 5px; text-align: left; white-space: nowrap; }}
-    .tip-line span {{ font-weight: 700; color: #F4D068; }}
-    .tip-line span.rarity-common {{ color: #CD7F32; }}       
-    .tip-line span.rarity-uncommon {{ color: #C0C0C0; }}     
-    .tip-line span.rarity-rare {{ color: #3b82f6; }}         
-    .tip-line span.rarity-epic {{ color: #a855f7; }}         
-    .tip-line span.rarity-legendary {{ color: #f59e0b; }}    
-    .dashboard-row {{ display: flex; justify-content: center; gap: 20px; margin-top: 45px; padding: 0 15px; }}
-    .stat-card {{ background: #161925; border: 1px solid #23273A; border-radius: 6px; padding: 10px 20px; min-width: 180px; text-align: center; }}
-    .stat-label {{ font-size: 11px; text-transform: uppercase; color: #718096; letter-spacing: 0.75px; margin-bottom: 4px; }}
-    .stat-value {{ font-size: 18px; font-weight: 700; color: #FFF; }}
+    }
+    .portfolio-title { text-align: center; font-size: 24px; font-weight: 600; color: #FFFFFF; margin-bottom: 12px; }
+    .portfolio-intro { text-align: center; max-width: 800px; margin: 0 auto 50px auto; font-size: 13px; line-height: 1.6; color: rgba(255, 255, 255, 0.25); }
+    .portfolio-intro span { color: rgba(244, 208, 104, 0.4); font-weight: 600; }
+    .casement-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; padding: 0 15px; }
+    .grid-node { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .image-frame { width: 62px; height: 62px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+    .image-frame img, .lock-node { width: 100%; height: 100%; object-fit: contain; transition: transform 0.15s ease-in-out; }
+    .lock-node { width: 52px; height: 52px; border-radius: 50%; border: 2px dashed #23273A; background: #161925; display: flex; align-items: center; justify-content: center; color: #3D4563; font-size: 13px; }
+    .grid-node:hover .image-frame img, .grid-node:hover .lock-node { transform: scale(1.15); }
+    .quantity-badge { font-size: 12px; font-weight: 700; color: #F4D068; margin-bottom: 3px; min-height: 15px; }
+    .label-badge { font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
+    .node-tooltip { visibility: hidden; opacity: 0; position: absolute; top: -120px; left: 50%; transform: translateX(-50%); width: 180px; background: #161925; border: 1px solid #282E48; border-radius: 8px; padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 99999; transition: opacity 0.12s ease-in-out; pointer-events: none; }
+    .grid-node:hover .node-tooltip { visibility: visible; opacity: 1; }
+    .grid-node:first-child .node-tooltip { left: 0; transform: translateX(0); }
+    .grid-node:last-child .node-tooltip { left: auto; right: 0; transform: translateX(0); }
+    .tip-line { font-size: 11px; color: #E2E8F0; margin-bottom: 5px; text-align: left; white-space: nowrap; }
+    .tip-line span { font-weight: 700; color: #F4D068; }
+    .tip-line span.rarity-common { color: #CD7F32; }       
+    .tip-line span.rarity-uncommon { color: #C0C0C0; }}     
+    .tip-line span.rarity-rare { color: #3b82f6; }         
+    .tip-line span.rarity-epic { color: #a855f7; }         
+    .tip-line span.rarity-legendary { color: #f59e0b; }    
+    .dashboard-row { display: flex; justify-content: center; gap: 20px; margin-top: 45px; padding: 0 15px; }
+    .stat-card { background: #161925; border: 1px solid #23273A; border-radius: 6px; padding: 10px 20px; min-width: 180px; text-align: center; }
+    .stat-label { font-size: 11px; text-transform: uppercase; color: #718096; letter-spacing: 0.75px; margin-bottom: 4px; }
+    .stat-value { font-size: 18px; font-weight: 700; color: #FFF; }
     
-    .action-container {{ display: flex; flex-direction: column; align-items: center; margin-top: 30px; width: 100%; }}
-    .mine-button {{ width: 424px; height: 46px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }}
-    .mine-button:hover {{ transform: scale(1.05); }}
-    .mine-button:disabled {{ opacity: 0.6; cursor: not-allowed; transform: scale(1) !important; background-color: #23273A !important; color: #718096 !important; }}
+    .action-container { display: flex; flex-direction: column; align-items: center; margin-top: 30px; width: 100%; }
+    .mine-button { width: 424px; height: 46px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }
+    .mine-button:hover { transform: scale(1.05); }
+    .mine-button:disabled { opacity: 0.6; cursor: not-allowed; transform: scale(1) !important; background-color: #23273A !important; color: #718096 !important; }
     
-    .animation-display {{ margin-top: 25px; height: 240px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }}
-    .spin-box {{ width: 140px; height: 140px; min-height: 140px; border-radius: 12px; background: #161925; border: 3px solid #23273A; display: none; align-items: center; justify-content: center; box-sizing: border-box; }}
-    .spin-box img {{ width: 88%; height: 88%; object-fit: contain; }}
-    .outcome-text-wrapper {{ margin-top: 15px; height: 35px; text-align: center; opacity: 0; transition: opacity 0.2s ease-in-out; }}
-    .outcome-top {{ font-size: 11px; font-weight: 600; color: #718096; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }}
-    .outcome-bottom {{ font-size: 18px; font-weight: 800; color: #F4D068; text-transform: uppercase; }}
-    .claim-button {{ margin-top: 14px; width: 160px; height: 32px; background-color: transparent; border: 2px solid #F4D068; border-radius: 4px; color: #F4D068; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; opacity: 0; transform: translateY(5px); transition: all 0.2s ease-in-out; }}
-    .claim-button.visible {{ opacity: 1; transform: translateY(0); }}
-    .claim-button:hover {{ background-color: #F4D068; color: #0E1117; }}
+    .animation-display { margin-top: 25px; height: 240px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
+    .spin-box { width: 140px; height: 140px; min-height: 140px; border-radius: 12px; background: #161925; border: 3px solid #23273A; display: none; align-items: center; justify-content: center; box-sizing: border-box; }
+    .spin-box img { width: 88%; height: 88%; object-fit: contain; }
+    .outcome-text-wrapper { margin-top: 15px; height: 35px; text-align: center; opacity: 0; transition: opacity 0.2s ease-in-out; }
+    .outcome-top { font-size: 11px; font-weight: 600; color: #718096; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+    .outcome-bottom { font-size: 18px; font-weight: 800; color: #F4D068; text-transform: uppercase; }
+    .claim-button { margin-top: 14px; width: 160px; height: 32px; background-color: transparent; border: 2px solid #F4D068; border-radius: 4px; color: #F4D068; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; opacity: 0; transform: translateY(5px); transition: all 0.2s ease-in-out; }
+    .claim-button.visible { opacity: 1; transform: translateY(0); }
+    .claim-button:hover { background-color: #F4D068; color: #0E1117; }
 </style>
 
 <div class="portfolio-title">Timber Medallion Portfolio</div>
 <div class="portfolio-intro"> Master tracking dashboard powered directly by your cloud inventory records. Premium tokens scale in rarity up to the single production run <span>Agarwood Medallion</span>.</div>
 
 <div class="casement-grid">
+__GRID_ITEMS_PLACEHOLDER__
+</div>
+
+<div class="dashboard-row">
+    <div class="stat-card">
+        <div class="stat-label">Collection Value</div>
+        <div class="stat-value">__VALUE_PLACEHOLDER__</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Medallions Collected</div>
+        <div class="stat-value">__COLLECTED_PLACEHOLDER__</div>
+    </div>
+</div>
+
+<div class="action-container">
+    <button class="mine-button" id="mineBtn" onclick="runMiningSequence()">Mine a Medallion</button>
+    <div class="animation-display">
+        <div class="spin-box" id="cyclerBox"> <img id="cyclerImg" src="" /> </div>
+        <div class="outcome-text-wrapper" id="outcomeWrapper">
+            <div class="outcome-top">Successfully Mined:</div>
+            <div class="outcome-bottom" id="itemNameTxt"></div>
+        </div>
+        <button class="claim-button" id="claimBtn" onclick="commitClaimToSheets()">Claim Medallion</button>
+    </div>
+</div>
+
+<script>
+    const assetLibrary = __ASSET_MAP_PLACEHOLDER__;
+    const pool = ['Spruce', 'Pine', 'Meranti', 'Balsa', 'Oak', 'Maple', 'Walnut', 'Cherry', 'Mahogany', 'Ebony', 'Rosewood', 'Agarwood'];
+    let selectedItem = "";
+
+    function runMiningSequence() {
+        const btn = document.getElementById('mineBtn');
+        const box = document.getElementById('cyclerBox');
+        const img = document.getElementById('cyclerImg');
+        const wrapper = document.getElementById('outcomeWrapper');
+        const itemTxt = document.getElementById('itemNameTxt');
+        const claimBtn = document.getElementById('claimBtn');
+        
+        btn.disabled = true;
+        wrapper.style.opacity = "0";
+        claimBtn.classList.remove('visible');
+        box.style.display = "flex";
+        box.style.borderColor = "#23273A";
+        
+        let counter = 0;
+        let speed = 40; 
+        selectedItem = pool[Math.floor(Math.random() * pool.length)];
+
+        function cycle() {
+            const currentItem = pool[counter % pool.length];
+            if (assetLibrary[currentItem]) img.src = assetLibrary[currentItem];
+            counter++;
+
+            if (speed < 320) {
+                speed += 14; 
+                setTimeout(cycle, speed);
+            } else {
+                if (assetLibrary[selectedItem]) img.src = assetLibrary[selectedItem];
+                itemTxt.innerText = selectedItem.toUpperCase() + " MEDALLION!";
+                wrapper.style.opacity = "1";
+                claimBtn.classList.add('visible');
+            }
+        }
+        setTimeout(cycle, speed);
+    }
+
+    function commitClaimToSheets() {
+        if (!selectedItem) return;
+        const claimBtn = document.getElementById('claimBtn');
+        claimBtn.disabled = true;
+        claimBtn.innerText = "Saving...";
+        
+        window.parent.postMessage({
+            type: 'streamlit:set_widget_value',
+            from_macro: true,
+            widget_id: 'hidden_claim_input',
+            value: selectedItem
+        }, '*');
+    }
+</script>
 """
 
+# Dynamic generation of sub-elements
+grid_elements_html = ""
 for wood_name in MEDALLION_COLUMNS:
     display_label = wood_name[:5].upper()
     lookup_key = wood_name.strip().lower()
@@ -168,7 +251,7 @@ for wood_name in MEDALLION_COLUMNS:
         
     img_b64 = get_image_base64(f"assets/{wood_name.lower()}.png")
     
-    html_elements += f"""
+    grid_elements_html += f"""
     <div class="grid-node">
         <div class="node-tooltip">
             <div class="tip-line">Name: <span>{wood_name}</span></div>
@@ -186,94 +269,16 @@ for wood_name in MEDALLION_COLUMNS:
     </div>
     """
 
-html_elements += f"""
-</div>
+# Safely inject values into template using string replacement (bypassing f-string parsing bugs)
+html_elements = html_base_template.replace("__GRID_ITEMS_PLACEHOLDER__", grid_elements_html)
+html_elements = html_elements.replace("__VALUE_PLACEHOLDER__", summary_value)
+html_elements = html_elements.replace("__COLLECTED_PLACEHOLDER__", summary_collected)
+html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
 
-<div class="dashboard-row">
-    <div class="stat-card">
-        <div class="stat-label">Collection Value</div>
-        <div class="stat-value">{summary_value}</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Medallions Collected</div>
-        <div class="stat-value">{summary_collected}</div>
-    </div>
-</div>
-
-<div class="action-container">
-    <button class="mine-button" id="mineBtn" onclick="runMiningSequence()">Mine a Medallion</button>
-    <div class="animation-display">
-        <div class="spin-box" id="cyclerBox"> <img id="cyclerImg" src="" /> </div>
-        <div class="outcome-text-wrapper" id="outcomeWrapper">
-            <div class="outcome-top">Successfully Mined:</div>
-            <div class="outcome-bottom" id="itemNameTxt"></div>
-        </div>
-        <button class="claim-button" id="claimBtn" onclick="commitClaimToSheets()">Claim Medallion</button>
-    </div>
-</div>
-
-<script>
-    const assetLibrary = {asset_map_js};
-    const pool = ['Spruce', 'Pine', 'Meranti', 'Balsa', 'Oak', 'Maple', 'Walnut', 'Cherry', 'Mahogany', 'Ebony', 'Rosewood', 'Agarwood'];
-    let selectedItem = "";
-
-    function runMiningSequence() {{
-        const btn = document.getElementById('mineBtn');
-        const box = document.getElementById('cyclerBox');
-        const img = document.getElementById('cyclerImg');
-        const wrapper = document.getElementById('outcomeWrapper');
-        const itemTxt = document.getElementById('itemNameTxt');
-        const claimBtn = document.getElementById('claimBtn');
-        
-        btn.disabled = true;
-        wrapper.style.opacity = "0";
-        claimBtn.classList.remove('visible');
-        box.style.display = "flex";
-        box.style.borderColor = "#23273A";
-        
-        let counter = 0;
-        let speed = 40; 
-        selectedItem = pool[Math.floor(Math.random() * pool.length)];
-
-        function cycle() {{
-            const currentItem = pool[counter % pool.length];
-            if (assetLibrary[currentItem]) img.src = assetLibrary[currentItem];
-            counter++;
-
-            if (speed < 320) {{
-                speed += 14; 
-                setTimeout(cycle, speed);
-            }} else {{
-                if (assetLibrary[selectedItem]) img.src = assetLibrary[selectedItem];
-                itemTxt.innerText = selectedItem.toUpperCase() + " MEDALLION!";
-                wrapper.style.opacity = "1";
-                claimBtn.classList.add('visible');
-            }}
-        }}
-        setTimeout(cycle, speed);
-    }}
-
-    function commitClaimToSheets() {{
-        if (!selectedItem) return;
-        const claimBtn = document.getElementById('claimBtn');
-        claimBtn.disabled = true;
-        claimBtn.innerText = "Saving...";
-        
-        // Fixed Python escaping formatting with doubled-up curly brackets
-        window.parent.postMessage({{
-            type: 'streamlit:set_widget_value',
-            from_macro: true,
-            widget_id: 'hidden_claim_input',
-            value: selectedItem
-        }}, '*');
-    }}
-</script>
-"""
-
-# Render custom HTML components layout framework using an explicit key handle
+# Render component layout frame
 st.components.v1.html(html_elements, height=770, scrolling=False, key="medallion_mesh_component")
 
-# The hidden input element tracking channel matching widget_id exactly
+# Hidden inputs capturing secure postMessage tracking updates from JavaScript
 st.text_input("", key="hidden_claim_input", label_visibility="collapsed")
 st.markdown(
     "<style>div[data-testid='stTextInput'] {display:none !important;}</style>", 
