@@ -56,6 +56,20 @@ st.markdown("""
     /* Completely collapse sidebar if it tries to render */
     [data-testid="stSidebar"] { display: none !important; }
     
+    /* HIDE THE REFRESH BRIDGE TEXTBOX PERMANENTLY FROM VIEW */
+    div.element-container:has(input[aria-label="refresh_bridge"]) {
+        display: none !important;
+        height: 0px !important;
+        position: absolute !important;
+    }
+    
+    /* REMOVE THE 'PRESS ENTER TO APPLY' SUBMIT HINT IN STREAMLIT FORMS */
+    [data-testid="stForm"] [data-testid="InputInstructions"] {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0px !important;
+    }
+    
     /* Center and position the login card layout box wrapper cleanly */
     div[data-testid="stForm"] {
         background: #161925 !important;
@@ -166,7 +180,7 @@ if not st.session_state["authenticated"]:
 # ARCHITECTURE SPLIT - INTERACTION PANEL B: VERIFIED MASTER ECOSYSTEM
 # ====================================================================
 else:
-    # Invisible bridge element that lets JavaScript signal Streamlit to refresh data without losing session authentication
+    # Invisible bridge layout element used for data syncing
     if st.text_input("refresh_bridge", key="refresh_trigger", label_visibility="collapsed") != "":
         st.session_state["refresh_counter"] += 1
         st.rerun()
@@ -318,14 +332,12 @@ else:
         let selectedItem = "";
 
         function triggerSystemLogout() {
-            // Write a dummy string to our hidden input inside Streamlit to cleanly invoke a clear state reset
             const streamlitDoc = window.parent.document;
             const inputElements = streamlitDoc.querySelectorAll('input[aria-label="refresh_bridge"]');
             if(inputElements.length > 0) {
                 inputElements[0].value = "LOGOUT_EXECUTE";
                 inputElements[0].dispatchEvent(new Event('input', { bubbles: true }));
             } else {
-                // Fallback route if running inside isolated iframe modes
                 window.location.reload();
             }
         }
@@ -411,7 +423,6 @@ else:
             const imgPing = new Image();
             imgPing.onload = imgPing.onerror = function() {
                 setTimeout(() => { 
-                    // Safely tells the underlying layout structure to pull down new dataset values without a logout drop
                     const streamlitDoc = window.parent.document;
                     const inputElements = streamlitDoc.querySelectorAll('input[aria-label="refresh_bridge"]');
                     if(inputElements.length > 0) {
@@ -427,7 +438,7 @@ else:
     </script>
     """
 
-    # Handle page level action hooks passed down from our custom web view component frame
+    # Handle state transitions passed from the inline code layout blocks
     if st.session_state["refresh_trigger"] == "LOGOUT_EXECUTE":
         st.session_state["authenticated"] = False
         st.session_state["user_passcode"] = ""
