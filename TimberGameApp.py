@@ -19,8 +19,6 @@ st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide")
 # ====================================================================
 # PHASE 1: PROCESS INBOUND CLAIMS BEFORE RETRIEVING LIVE DATA
 # ====================================================================
-# This runs strictly on the Python side before anything renders,
-# completely bypassing the javascript iframe security blocks.
 if "claim_item" in st.query_params:
     target_mined = st.query_params["claim_item"]
     try:
@@ -217,8 +215,6 @@ __GRID_ITEMS_PLACEHOLDER__
         claimBtn.disabled = true;
         claimBtn.innerText = "Saving...";
         
-        // This breakout uses URL modification via safety checking 
-        // to safely bypass standard sandboxed iframe limitations.
         const win = targetWindow();
         const curUrl = new URL(win.location.href);
         curUrl.searchParams.set("claim_item", selectedItem);
@@ -240,7 +236,7 @@ for wood_name in MEDALLION_COLUMNS:
         rarity = sheet_row.get("Rarity", "N/A")
         value = sheet_row.get("Value", "N/A")
         availability = sheet_row.get("Availability", "N/A")
-        probability = sheet_row.get("Probability", "N/A")
+        raw_probability = sheet_row.get("Probability", "N/A")
         
         clean_rarity = str(rarity).strip().lower()
         if "common" in clean_rarity and "uncommon" not in clean_rarity: rarity_class = "rarity-common"
@@ -250,7 +246,21 @@ for wood_name in MEDALLION_COLUMNS:
         elif "legendary" in clean_rarity: rarity_class = "rarity-legendary"
         
         if value != "N/A" and not str(value).strip().startswith("$"): value = f"${str(value).strip()}"
-        if probability != "N/A" and not str(probability).endswith("%"): probability = f"{probability}%"
+        
+        # ====================================================================
+        # FIXED PROBABILITY FORMATTING
+        # ====================================================================
+        prob_str = str(raw_probability).replace("%", "").strip()
+        try:
+            prob_val = float(prob_str)
+            # If Google Sheets API returns raw fractional decimals like 0.151 instead of 15.1
+            if prob_val > 0 and prob_val < 1.0:
+                prob_val = prob_val * 100
+            
+            # Format cleanly removing trailing zero artifacts
+            probability = f"{prob_val:g}%"
+        except ValueError:
+            probability = f"{prob_str}%" if prob_str else "N/A"
     else:
         rarity = value = availability = probability = "Loading..."
         
@@ -274,12 +284,11 @@ for wood_name in MEDALLION_COLUMNS:
     </div>
     """
 
-# Inject values purely via safe string replacements (avoids all f-string type errors)
+# Inject values purely via safe string replacements
 html_elements = html_base_template.replace("__GRID_ITEMS_PLACEHOLDER__", grid_elements_html)
 html_elements = html_elements.replace("__VALUE_PLACEHOLDER__", summary_value)
 html_elements = html_elements.replace("__COLLECTED_PLACEHOLDER__", summary_collected)
 html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
 html_elements = html_elements.replace("__USERNAME_PLACEHOLDER__", st.session_state["username"])
 
-# Call HTML container safely without unsupported parameters
 st.components.v1.html(html_elements, height=770, scrolling=False)
