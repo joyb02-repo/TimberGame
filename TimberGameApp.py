@@ -15,25 +15,6 @@ MEDALLION_COLUMNS = [
 
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide")
 
-# ====================================================================
-# PHASE 1: PROCESS INBOUND CLAIMS BEFORE RETRIEVING LIVE DATA
-# ====================================================================
-if "claim_item" in st.query_params:
-    target_mined = st.query_params["claim_item"]
-    try:
-        payload = {
-            "action": "mineMedallion", 
-            "item": target_mined, 
-            "username": st.session_state["username"]
-        }
-        res = requests.post(API_URL, json=payload, timeout=15)
-        if res.status_code == 200:
-            st.cache_data.clear() 
-            st.query_params.clear() 
-            st.rerun() 
-    except Exception as e:
-        st.error(f"Failed to record mined item to cloud sheet: {e}")
-
 @st.cache_data(ttl=1)
 def fetch_all_sheet_data(user_id):
     try:
@@ -127,7 +108,7 @@ html_base_template = """
 </style>
 
 <div class="portfolio-title">Timber Medallion Portfolio</div>
-<div class="portfolio-intro">Master tracking dashboard for user <span>__USERNAME_PLACEHOLDER__</span>. Premium tokens scale in rarity up to the ultra-mythic Agarwood Medallion.</div>
+<div class="portfolio-intro"> Master tracking dashboard powered directly by your cloud inventory records. Premium tokens scale in rarity up to the single production run <span>Agarwood Medallion</span>.</div>
 
 <div class="casement-grid">
 __GRID_ITEMS_PLACEHOLDER__
@@ -160,6 +141,8 @@ __GRID_ITEMS_PLACEHOLDER__
     const assetLibrary = __ASSET_MAP_PLACEHOLDER__;
     const pool = ['Spruce', 'Pine', 'Meranti', 'Balsa', 'Oak', 'Maple', 'Walnut', 'Cherry', 'Mahogany', 'Ebony', 'Rosewood', 'Agarwood'];
     let selectedItem = "";
+    const endpointUrl = "__API_URL_PLACEHOLDER__";
+    const userContext = "__USERNAME_PLACEHOLDER__";
 
     function runMiningSequence() {
         const btn = document.getElementById('mineBtn');
@@ -203,10 +186,35 @@ __GRID_ITEMS_PLACEHOLDER__
         claimBtn.disabled = true;
         claimBtn.innerText = "Saving...";
         
-        const topWindow = window.parent || window;
-        const curUrl = new URL(topWindow.location.href);
-        curUrl.searchParams.set("claim_item", selectedItem);
-        topWindow.location.href = curUrl.toString();
+        // Asynchronous, direct fetch requests skip the sandboxed window location checks
+        fetch(endpointUrl, {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: "mineMedallion",
+                item: selectedItem,
+                username: userContext
+            })
+        })
+        .then(response => {
+            // Signal a successful data save, then use the top window layout channel to force a reset
+            claimBtn.innerText = "Saved!";
+            setTimeout(() => {
+                window.parent.postMessage({type: 'streamlit:render'}, '*');
+                // Fallback top window visual refresh interface trigger
+                try {
+                    window.parent.location.reload();
+                } catch(e) {
+                    // Fail gracefully if fallback block operates
+                }
+            }, 500);
+        })
+        .catch(error => {
+            console.error('Error recording claim:', error);
+            claimBtn.innerText = "Error!";
+            claimBtn.disabled = false;
+        });
     }
 </script>
 """
@@ -262,6 +270,7 @@ html_elements = html_base_template.replace("__GRID_ITEMS_PLACEHOLDER__", grid_el
 html_elements = html_elements.replace("__VALUE_PLACEHOLDER__", summary_value)
 html_elements = html_elements.replace("__COLLECTED_PLACEHOLDER__", summary_collected)
 html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
+html_elements = html_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
 html_elements = html_elements.replace("__USERNAME_PLACEHOLDER__", st.session_state["username"])
 
 st.components.v1.html(html_elements, height=770, scrolling=False)
