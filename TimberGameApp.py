@@ -4,7 +4,7 @@ import os
 import base64
 
 # ====================================================================
-# PLATINUM MASTER ARCHITECTURE - STABLE INTEGRATION RUNTIME
+# PLATINUM MASTER ARCHITECTURE - BACKGROUND FETCH RUNTIME
 # ====================================================================
 
 API_URL = st.secrets["API_URL"]
@@ -38,7 +38,6 @@ def fetch_all_sheet_data(user_id):
                 return medallions_map, inventory_counts, val, coll
     except Exception as e:
         pass
-    # Local fallback system to keep dashboard running smoothly if API response drops
     return {}, {}, "$0", "0"
 
 def get_image_base64(path):
@@ -114,12 +113,6 @@ html_base_template = """
     .claim-button.visible { opacity: 1; transform: translateY(0); }
     .claim-button:hover { background-color: #F4D068; color: #0E1117; }
 </style>
-
-<form id="sheetBridgeForm" action="__API_URL_PLACEHOLDER__" method="POST" target="_self" style="display:none;">
-    <input type="hidden" name="action" value="mineMedallion">
-    <input type="hidden" name="username" value="__USERNAME_PLACEHOLDER__">
-    <input type="hidden" name="item" id="formItemField">
-</form>
 
 <div class="portfolio-title">Timber Medallion Portfolio</div>
 <div class="portfolio-intro"> Master tracking dashboard powered directly by your cloud inventory records. Premium tokens scale in rarity up to the single production run <span>Agarwood Medallion</span>.</div>
@@ -199,8 +192,25 @@ __GRID_ITEMS_PLACEHOLDER__
         claimBtn.disabled = true;
         claimBtn.innerText = "Saving...";
         
-        document.getElementById('formItemField').value = selectedItem;
-        document.getElementById('sheetBridgeForm').submit();
+        const targetUrl = "__API_URL_PLACEHOLDER__";
+        
+        // Use background URL parameters to completely bypass Google's X-Frame iframe restrictions
+        const submissionUrl = targetUrl + "?action=mineMedallion&username=" + encodeURIComponent("__USERNAME_PLACEHOLDER__") + "&item=" + encodeURIComponent(selectedItem);
+        
+        // Execute background network call without page navigation inside the frame
+        fetch(submissionUrl, { method: 'POST', mode: 'no-cors' })
+            .then(() => {
+                // Instantly force a full page refresh on the top parent Streamlit window
+                setTimeout(() => {
+                    const win = (window.self !== window.top) ? window.parent : window;
+                    win.location.reload();
+                }, 400);
+            })
+            .catch((err) => {
+                // Fallback catch-all to trigger refresh if no-cors forces a silent execution block
+                const win = (window.self !== window.top) ? window.parent : window;
+                win.location.reload();
+            });
     }
 </script>
 """
