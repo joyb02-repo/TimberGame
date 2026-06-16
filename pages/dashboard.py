@@ -39,22 +39,6 @@ st.markdown("""
     }
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 20px !important; padding-bottom: 10px !important; max-width: 100% !important; }
-    
-    /* 🎯 TARGET ONLY THE HIDDEN UTILITY COLUMN SYSTEM AT THE BOTTOM */
-    div[data-testid="stColumn"]:has(button[key="sys_route_store_btn"]),
-    div[data-testid="stColumn"]:has(button[key="sys_route_store_btn"]) button {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        height: 0px !important;
-        width: 0px !important;
-        max-height: 0px !important;
-        position: absolute !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        border: none !important;
-        pointer-events: none !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -62,10 +46,16 @@ st.markdown("""
 # SYSTEM BACKEND PROCESSORS - TOP LEVEL
 # ====================================================================
 
-# This button stays up top completely unmodified, visible, and fully interactive!
+# 1. This button renders normally and stays fully functional at the top left
 if st.button("Update Data 🔄", key="sys_refresh_btn"):
     st.cache_data.clear()
     st.rerun()
+
+# 2. Native empty block container: Loads the button to memory for JS but drops visual display
+secret_bridge = st.empty()
+with secret_bridge:
+    if st.button("Route Store", key="sys_route_store_btn"):
+        st.switch_page("pages/store.py")
 
 
 def get_image_base64(path):
@@ -376,15 +366,3 @@ html_elements = html_elements.replace("__POOL_ITEMS_PLACEHOLDER__", json.dumps(j
 html_elements = html_elements.replace("__POOL_WEIGHTS_PLACEHOLDER__", json.dumps(js_pool_weights))
 
 st.components.v1.html(html_elements, height=900, scrolling=False)
-
-
-# ====================================================================
-# SYSTEM BACKEND PROCESSORS - LOWER LEVEL ISOLATION
-# ====================================================================
-
-# 2. We isolate the background utility link at the bottom into a column matrix.
-# The custom layout engine hides this entire block cleanly.
-util_col1, util_col2 = st.columns(2)
-with util_col1:
-    if st.button("Route Store", key="sys_route_store_btn"):
-        st.switch_page("pages/store.py")
