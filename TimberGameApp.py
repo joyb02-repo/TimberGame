@@ -253,6 +253,7 @@ else:
             border-color: #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.05);
         }
         .portfolio-title { font-size: 24px; font-weight: 600; color: #FFFFFF; margin-bottom: 8px; }
+        .portfolio-title span.user-accent { color: #F4D068; }
         .portfolio-intro { max-width: 800px; margin: 0 auto 20px auto; font-size: 13px; line-height: 1.6; color: rgba(255, 255, 255, 0.25); }
         .portfolio-intro span { color: rgba(244, 208, 104, 0.4); font-weight: 600; }
         .casement-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; padding: 0 15px; }
@@ -307,7 +308,7 @@ else:
 
     <div class="header-wrapper">
         <button class="logout-btn-global" onclick="triggerSystemLogout()">🔓 Logout</button>
-        <div class="portfolio-title">Timber Medallion Portfolio — __USERNAME_UPPER__</div>
+        <div class="portfolio-title">Timber Medallion Portfolio: <span class="user-accent">__USERNAME_UPPER__</span></div>
         <div class="portfolio-intro"> Master tracking dashboard powered directly by your cloud inventory records. Premium tokens scale in rarity up to the single production run <span>Agarwood Medallion</span>.</div>
     </div>
 
