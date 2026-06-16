@@ -5,7 +5,7 @@ import base64
 
 API_URL = st.secrets["API_URL"]
 
-# Establish default user context (You can wire this up to st.sidebar or log-in later)
+# Establish default user context
 if "username" not in st.session_state:
     st.session_state["username"] = "joyb02"
 
@@ -16,11 +16,31 @@ MEDALLION_COLUMNS = [
 
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide")
 
+# ====================================================================
+# PHASE 1: PROCESS INBOUND CLAIMS BEFORE RETRIEVING LIVE DATA
+# ====================================================================
+# Moving this block to the very top guarantees that increments hit the sheet
+# before fetch_all_sheet_data executes, preventing the "Saving..." loop hang.
+if "mined_item" in st.query_params:
+    target_mined = st.query_params["mined_item"]
+    try:
+        payload = {
+            "action": "mineMedallion", 
+            "item": target_mined, 
+            "username": st.session_state["username"]
+        }
+        res = requests.post(API_URL, json=payload, timeout=15)
+        if res.status_code == 200:
+            st.cache_data.clear() 
+            st.query_params.clear() 
+            st.rerun() 
+    except Exception as e:
+        st.error(f"Failed to record mined item to cloud sheet: {e}")
+
 @st.cache_data(ttl=1)
 def fetch_all_sheet_data(user_id):
     """Queries details, summary values, and inventories specific to the active user."""
     try:
-        # Include username context in the post request payload
         payload = {"action": "fetchData", "username": user_id}
         response = requests.post(API_URL, json=payload, timeout=15)
         if response.status_code == 200:
@@ -46,23 +66,6 @@ def get_image_base64(path):
 
 # Load up dataset bound explicitly to current user row configuration
 live_data, live_inventory, summary_value, summary_collected = fetch_all_sheet_data(st.session_state["username"])
-
-# Process backend claim hooks
-if "mined_item" in st.query_params:
-    target_mined = st.query_params["mined_item"]
-    try:
-        payload = {
-            "action": "mineMedallion", 
-            "item": target_mined, 
-            "username": st.session_state["username"]
-        }
-        res = requests.post(API_URL, json=payload, timeout=15)
-        if res.status_code == 200:
-            st.cache_data.clear() 
-            st.query_params.clear() 
-            st.rerun() 
-    except Exception as e:
-        st.error(f"Failed to record mined item to cloud sheet: {e}")
 
 if not summary_value.strip().startswith("$") and "Loading" not in summary_value:
     summary_value = f"${summary_value.strip()}"
@@ -112,14 +115,17 @@ html_elements = f"""
     .stat-card {{ background: #161925; border: 1px solid #23273A; border-radius: 6px; padding: 10px 20px; min-width: 180px; text-align: center; }}
     .stat-label {{ font-size: 11px; text-transform: uppercase; color: #718096; letter-spacing: 0.75px; margin-bottom: 4px; }}
     .stat-value {{ font-size: 18px; font-weight: 700; color: #FFF; }}
+    
     .action-container {{ display: flex; flex-direction: column; align-items: center; margin-top: 30px; width: 100%; }}
     .mine-button {{ width: 424px; height: 46px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }}
     .mine-button:hover {{ transform: scale(1.05); }}
     .mine-button:disabled {{ opacity: 0.6; cursor: not-allowed; transform: scale(1) !important; background-color: #23273A !important; color: #718096 !important; }}
-    .animation-display {{ margin-top: 25px; min-height: 230px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }}
-    .spin-box {{ width: 140px; height: 140px; border-radius: 12px; background: #161925; border: 3px solid #23273A; display: none; align-items: center; justify-content: center; }}
+    
+    /* Strict height rules applied below to fix layout position shifts when switching states */
+    .animation-display {{ margin-top: 25px; height: 240px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }}
+    .spin-box {{ width: 140px; height: 140px; min-height: 140px; border-radius: 12px; background: #161925; border: 3px solid #23273A; display: none; align-items: center; justify-content: center; box-sizing: border-box; }}
     .spin-box img {{ width: 88%; height: 88%; object-fit: contain; }}
-    .outcome-text-wrapper {{ margin-top: 15px; text-align: center; opacity: 0; transition: opacity 0.2s ease-in-out; }}
+    .outcome-text-wrapper {{ margin-top: 15px; height: 35px; text-align: center; opacity: 0; transition: opacity 0.2s ease-in-out; }}
     .outcome-top {{ font-size: 11px; font-weight: 600; color: #718096; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }}
     .outcome-bottom {{ font-size: 18px; font-weight: 800; color: #F4D068; text-transform: uppercase; }}
     .claim-button {{ margin-top: 14px; width: 160px; height: 32px; background-color: transparent; border: 2px solid #F4D068; border-radius: 4px; color: #F4D068; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; opacity: 0; transform: translateY(5px); transition: all 0.2s ease-in-out; }}
@@ -144,7 +150,7 @@ for wood_name in MEDALLION_COLUMNS:
     if sheet_row:
         rarity = sheet_row.get("Rarity", "N/A")
         value = sheet_row.get("Value", "N/A")
-        availability = sheet_row.get("Availability", "N/A")  # This will now display the live auto-calculated remainder!
+        availability = sheet_row.get("Availability", "N/A")
         probability = sheet_row.get("Probability", "N/A")
         
         clean_rarity = str(rarity).strip().lower()
@@ -222,6 +228,9 @@ html_elements += f"""
         wrapper.style.opacity = "0";
         claimBtn.classList.remove('visible');
         box.style.display = "flex";
+        
+        // Lock explicit border color style variations during processing to keep asset frame fixed
+        box.style.borderColor = "#23273A";
         
         let counter = 0;
         let speed = 40; 
