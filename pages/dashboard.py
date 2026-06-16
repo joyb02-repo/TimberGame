@@ -39,6 +39,17 @@ st.markdown("""
     }
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 20px !important; padding-bottom: 10px !important; max-width: 100% !important; }
+    
+    /* 🎯 Completely vaporize the hidden button's container while keeping it in the HTML source */
+    div#hidden-trigger-island {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0px !important;
+        width: 0px !important;
+        overflow: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -46,16 +57,16 @@ st.markdown("""
 # SYSTEM BACKEND PROCESSORS - TOP LEVEL
 # ====================================================================
 
-# 1. This button renders normally and stays fully functional at the top left
+# 1. This button stays visible and fully interactive!
 if st.button("Update Data 🔄", key="sys_refresh_btn"):
     st.cache_data.clear()
     st.rerun()
 
-# 2. Native empty block container: Loads the button to memory for JS but drops visual display
-secret_bridge = st.empty()
-with secret_bridge:
-    if st.button("Route Store", key="sys_route_store_btn"):
-        st.switch_page("pages/store.py")
+# 2. We containerize the route button into an isolated HTML block that our CSS hides
+st.markdown('<div id="hidden-trigger-island">', unsafe_allow_html=True)
+if st.button("Route Store", key="sys_route_store_btn"):
+    st.switch_page("pages/store.py")
+st.markdown('</div>', unsafe_allow_html=True)
 
 
 def get_image_base64(path):
