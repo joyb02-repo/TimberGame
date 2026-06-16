@@ -1,11 +1,12 @@
+# ====================================================================
+# PLATINUM MASTER WORKSPACE - STREAMLIT ENGINE WORKSPACE (PIN PROTECTED)
+# ENVIRONMENT SPECIFICATION: GITHUB DEPLOYMENT RUNTIME READY
+# ====================================================================
+
 import streamlit as st
 import requests
 import os
 import base64
-
-# ====================================================================
-# PLATINUM MASTER ARCHITECTURE - STABLE INTEGRATION RUNTIME
-# ====================================================================
 
 API_URL = st.secrets["API_URL"]
 
@@ -68,7 +69,7 @@ for wood in MEDALLION_COLUMNS:
 asset_map_js += "}"
 
 # ====================================================================
-# HTML/CSS RENDER CONTEXT (Perfect Sizing & Scaling Uniformity)
+# HTML/CSS RENDER CONTEXT (Mathematical Sizing Alignment + PIN Panel)
 # ====================================================================
 html_base_template = """
 <style>
@@ -84,7 +85,6 @@ html_base_template = """
     .casement-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; padding: 0 15px; }
     .grid-node { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
     
-    /* Strict identical baseline frames */
     .image-frame { 
         width: 60px; 
         height: 60px; 
@@ -94,8 +94,6 @@ html_base_template = """
         margin-bottom: 8px; 
         box-sizing: border-box; 
     }
-    
-    /* Scale active images cleanly inside frame boundaries */
     .image-frame img { 
         width: 100%;
         height: 100%;
@@ -103,8 +101,6 @@ html_base_template = """
         transition: transform 0.15s ease-in-out; 
         box-sizing: border-box;
     }
-    
-    /* Lock elements scaled down slightly so they visually match file shapes perfectly */
     .lock-node { 
         width: 52px; 
         height: 52px; 
@@ -134,15 +130,24 @@ html_base_template = """
     .tip-line span.rarity-rare { color: #3b82f6; }         
     .tip-line span.rarity-epic { color: #a855f7; }         
     .tip-line span.rarity-legendary { color: #f59e0b; }    
+    
     .dashboard-row { display: flex; justify-content: center; gap: 20px; margin-top: 30px; padding: 0 15px; }
     .stat-card { background: #161925; border: 1px solid #23273A; border-radius: 6px; padding: 10px 20px; min-width: 180px; text-align: center; }
     .stat-label { font-size: 11px; text-transform: uppercase; color: #718096; letter-spacing: 0.75px; margin-bottom: 4px; }
     .stat-value { font-size: 18px; font-weight: 700; color: #FFF; }
     
+    /* Security Verification Console Layer Styles */
     .action-container { display: flex; flex-direction: column; align-items: center; margin-top: 25px; width: 100%; }
+    .pin-auth-wrapper { display: flex; gap: 8px; margin-bottom: 12px; width: 424px; box-sizing: border-box; }
+    .pin-input { flex: 1; height: 38px; background: #161925; border: 1px solid #23273A; border-radius: 6px; color: #FFF; text-align: center; font-size: 14px; font-weight: 600; letter-spacing: 2px; outline: none; box-sizing: border-box; }
+    .pin-input:focus { border-color: #3D4563; }
+    .pin-verify-btn { padding: 0 16px; height: 38px; background: #23273A; border: none; border-radius: 6px; color: #E2E8F0; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; box-sizing: border-box; transition: background 0.15s; }
+    .pin-verify-btn:hover { background: #2F354E; }
+    .pin-feedback-msg { font-size: 11px; font-weight: 600; margin-bottom: 10px; height: 14px; text-align: center; }
+    
     .mine-button { width: 424px; height: 46px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }
     .mine-button:hover { transform: scale(1.05); }
-    .mine-button:disabled { opacity: 0.6; cursor: not-allowed; transform: scale(1) !important; background-color: #23273A !important; color: #718096 !important; }
+    .mine-button:disabled { opacity: 0.35; cursor: not-allowed; transform: scale(1) !important; background-color: #161925 !important; color: #3D4563 !important; border: 1px solid #23273A; box-shadow: none !important; }
     
     .animation-display { margin-top: 20px; height: 240px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
     .spin-box { width: 140px; height: 140px; min-height: 140px; border-radius: 12px; background: #161925; border: 3px solid #23273A; display: none; align-items: center; justify-content: center; box-sizing: border-box; }
@@ -174,7 +179,14 @@ __GRID_ITEMS_PLACEHOLDER__
 </div>
 
 <div class="action-container">
-    <button class="mine-button" id="mineBtn" onclick="runMiningSequence()">Mine a Medallion</button>
+    <div class="pin-auth-wrapper" id="pinSection">
+        <input class="pin-input" type="text" id="pinField" placeholder="ENTER 6-DIGIT PIN" maxlength="6" />
+        <button class="pin-verify-btn" id="verifyBtn" onclick="evaluatePinAuthorization()">Verify PIN</button>
+    </div>
+    <div class="pin-feedback-msg" id="feedbackMsg" style="color: #718096;"></div>
+
+    <button class="mine-button" id="mineBtn" disabled onclick="runMiningSequence()">Mine a Medallion</button>
+    
     <div class="animation-display">
         <div class="spin-box" id="cyclerBox"> <img id="cyclerImg" src="" /> </div>
         <div class="outcome-text-wrapper" id="outcomeWrapper">
@@ -188,7 +200,50 @@ __GRID_ITEMS_PLACEHOLDER__
 <script>
     const assetLibrary = __ASSET_MAP_PLACEHOLDER__;
     const pool = ['Spruce', 'Pine', 'Meranti', 'Balsa', 'Oak', 'Maple', 'Walnut', 'Cherry', 'Mahogany', 'Ebony', 'Rosewood', 'Agarwood'];
+    const endpoint = "__API_URL_PLACEHOLDER__";
     let selectedItem = "";
+
+    async function evaluatePinAuthorization() {
+        const pinValue = document.getElementById("pinField").value.trim();
+        const feedback = document.getElementById("feedbackMsg");
+        const verifyBtn = document.getElementById("verifyBtn");
+        const mineBtn = document.getElementById("mineBtn");
+        
+        if (pinValue.length < 4) {
+            feedback.style.color = "#ef4444";
+            feedback.innerText = "Please enter a complete PIN key.";
+            return;
+        }
+        
+        verifyBtn.disabled = true;
+        verifyBtn.innerText = "Checking...";
+        feedback.style.color = "#718096";
+        feedback.innerText = "Authenticating with spreadsheet core...";
+        
+        try {
+            const queryUrl = endpoint + "?action=verifyPin&pin=" + encodeURIComponent(pinValue);
+            const res = await fetch(queryUrl);
+            const result = await res.json();
+            
+            if (result.status === "success") {
+                feedback.style.color = "#10b981";
+                feedback.innerText = "Access granted! Mining console unlocked.";
+                document.getElementById("pinField").disabled = true;
+                verifyBtn.style.display = "none";
+                mineBtn.disabled = false; // Ignite console gate
+            } else {
+                feedback.style.color = "#ef4444";
+                feedback.innerText = result.message || "Invalid security code.";
+                verifyBtn.disabled = false;
+                verifyBtn.innerText = "Verify PIN";
+            }
+        } catch(e) {
+            feedback.style.color = "#ef4444";
+            feedback.innerText = "Network connection failed. Try again.";
+            verifyBtn.disabled = false;
+            verifyBtn.innerText = "Verify PIN";
+        }
+    }
 
     function runMiningSequence() {
         const btn = document.getElementById('mineBtn');
@@ -233,8 +288,7 @@ __GRID_ITEMS_PLACEHOLDER__
         claimBtn.disabled = true;
         claimBtn.innerText = "Saving...";
         
-        const targetUrl = "__API_URL_PLACEHOLDER__";
-        const pingUrl = targetUrl + "?action=mineMedallion&username=" + encodeURIComponent("__USERNAME_PLACEHOLDER__") + "&item=" + encodeURIComponent(selectedItem);
+        const pingUrl = endpoint + "?action=mineMedallion&username=" + encodeURIComponent("__USERNAME_PLACEHOLDER__") + "&item=" + encodeURIComponent(selectedItem);
         
         const imgPing = new Image();
         imgPing.onload = imgPing.onerror = function() {
