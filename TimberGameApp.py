@@ -24,7 +24,7 @@ MEDALLION_COLUMNS = [
 ]
 
 LABEL_MAPPING = {
-    "Spruce": "SPRC", "Pine": "PINE", "Meranti", "BALS", "Balsa": "BALS",
+    "Spruce": "SPRC", "Pine": "PINE", "Meranti": "MRNT", "Balsa": "BALS",
     "Oak": "OAKW", "Maple": "MAPL", "Walnut": "WALN", "Cherry": "CHER",
     "Mahogany": "MHGN", "Ebony": "EBNY", "Rosewood": "RSWD", "Agarwood": "AGAR"
 }
