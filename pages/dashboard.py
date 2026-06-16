@@ -15,8 +15,7 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
 
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide", initial_sidebar_state="collapsed")
 
-# 🎯 CRITICAL FIX: The CSS MUST be injected BEFORE any button logic runs.
-# This ensures that even when st.switch_page() halts execution, the CSS is already in the DOM.
+# 🎯 THEME DESIGN OVERWRITE: Transforms the top-left layout into a gorgeous horizontal control row
 st.markdown("""
 <style>
     .stApp {
@@ -28,24 +27,57 @@ st.markdown("""
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 20px !important; padding-bottom: 10px !important; max-width: 100% !important; }
     
-    /* 🎯 PERFECT INVISIBLE BRIDGE: Keeps the button alive for JS clicks, but leaves 0px footprint on screen */
-    .hidden-bridge-container,
-    .hidden-bridge-container *,
-    button[key="sys_route_store_btn"],
-    div:has(> button[key="sys_route_store_btn"]) {
-        visibility: hidden !important;
-        opacity: 0 !important;
-        height: 0px !important;
-        width: 0px !important;
-        max-height: 0px !important;
-        max-width: 0px !important;
-        padding: 0 !important;
-        margin: 0 !important;
+    /* 🛠️ HORIZONTAL FLEX ALIGNMENT FOR TOP SYSTEM CONTROLS */
+    [data-testid="stVerticalBlock"] > div:nth-child(1),
+    [data-testid="stVerticalBlock"] > div:nth-child(2) {
+        display: inline-block !important;
+        width: auto !important;
+        margin-right: 12px !important;
+        float: left !important;
+    }
+    
+    /* Clear floating positions so the main dashboard matrix clears cleanly below them */
+    [data-testid="stVerticalBlock"] > div:nth-child(3) {
+        clear: both !important;
+    }
+
+    /* 🛒 THEME OVERWRITE: NATIVE "ROUTE STORE" SYSTEM BUTTON */
+    button[key="sys_route_store_btn"] {
+        background: linear-gradient(135deg, #F4D068 0%, #e0b84c 100%) !important;
+        color: #0E1117 !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
         border: none !important;
-        position: absolute !important;
-        left: -9999px !important;
-        top: -9999px !important;
-        pointer-events: none !important;
+        border-radius: 6px !important;
+        padding: 0.5rem 1.2rem !important;
+        box-shadow: 0 4px 12px rgba(244, 208, 104, 0.15) !important;
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease !important;
+    }
+    button[key="sys_route_store_btn"]:hover {
+        transform: scale(1.05) !important;
+        box-shadow: 0 6px 18px rgba(244, 208, 104, 0.3) !important;
+        color: #0E1117 !important;
+        border: none !important;
+    }
+    button[key="sys_route_store_btn"]:active {
+        transform: scale(0.97) !important;
+    }
+
+    /* 🔄 THEME OVERWRITE: "UPDATE DATA" UTILITY BUTTON */
+    button[key="sys_refresh_btn"] {
+        background-color: #161925 !important;
+        border: 1px solid #23273A !important;
+        color: #E2E8F0 !important;
+        font-weight: 600 !important;
+        border-radius: 6px !important;
+        padding: 0.5rem 1.2rem !important;
+        transition: all 0.2s ease !important;
+    }
+    button[key="sys_refresh_btn"]:hover {
+        background-color: #23273A !important;
+        border-color: #718096 !important;
+        color: #FFF !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -67,17 +99,15 @@ LABEL_MAPPING = {
 # SYSTEM BACKEND PROCESSORS - TOP LEVEL
 # ====================================================================
 
-# 1. Update Data Actuator: Pristine, visible, and fully interactive
+# Slot 1: Becomes the newly styled gold navbar anchor link
+if st.button("Visit Store 🛒", key="sys_route_store_btn"):
+    st.switch_page("pages/store.py")
+
+# Slot 2: Secondary companion system data refresher
 if st.button("Update Data 🔄", key="sys_refresh_btn"):
     st.cache_data.clear()
     st.rerun()
 
-# 2. Invisible Router Bridge: Living inside a completely zeroed-out wrapper 
-# that can't disrupt layout flow, but remains fully targetable by JavaScript.
-st.markdown('<div class="hidden-bridge-container">', unsafe_allow_html=True)
-if st.button("Route Store", key="sys_route_store_btn"):
-    st.switch_page("pages/store.py")
-st.markdown('</div>', unsafe_allow_html=True)
 
 def get_image_base64(path):
     if os.path.exists(path):
@@ -125,22 +155,6 @@ html_base_template = """
 <style>
     body { margin: 0; padding: 45px 0 0 0; background: transparent; font-family: 'Inter', sans-serif; position: relative; }
     .header-wrapper { position: relative; max-width: 100%; margin: 0 auto; padding: 0 15px; text-align: center; }
-    
-    .store-btn-global {
-        position: absolute; top: -25px; right: 15px; height: 38px; padding: 0 20px;
-        background: linear-gradient(135deg, #F4D068 0%, #e0b84c 100%); border: none; border-radius: 6px;
-        color: #0E1117; font-size: 13px; font-weight: 800; text-transform: uppercase;
-        letter-spacing: 0.5px; cursor: pointer; display: flex; align-items: center; gap: 8px; 
-        box-shadow: 0 4px 15px rgba(244, 208, 104, 0.25);
-        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s, box-shadow 0.2s;
-        z-index: 9999 !important;
-    }
-    .store-btn-global:hover { 
-        transform: scale(1.08);
-        background: linear-gradient(135deg, #FFF 0%, #F4D068 100%);
-        box-shadow: 0 6px 20px rgba(244, 208, 104, 0.4);
-    }
-    .store-btn-global:active { transform: scale(0.98); }
     
     .portfolio-title { font-size: 24px; font-weight: 600; color: #FFFFFF; margin-bottom: 8px; }
     .portfolio-title span.user-accent { color: #F4D068; }
@@ -200,7 +214,6 @@ html_base_template = """
 </style>
 
 <div class="header-wrapper">
-    <button class="store-btn-global" onclick="triggerStoreRedirection()">Visit Store 🛒</button>
     <div class="portfolio-title">Timber Medallion Portfolio: <span class="user-accent">__USERNAME_UPPER__</span></div>
     <div class="portfolio-intro">
         Master tracking dashboard connected live to cloud inventory matrices. Authenticated users can generate verified asset transactions by supplying validation tokens below. Hover over any node in your matrix layout to see real-time supply indexes, market valuations, and algorithm probabilities. Premium tier tokens scale up to the highly coveted, single production run <span>Agarwood Medallion</span>.
@@ -239,12 +252,6 @@ html_base_template = """
     const weights = __POOL_WEIGHTS_PLACEHOLDER__;
     const endpoint = "__API_URL_PLACEHOLDER__";
     let selectedItem = "";
-
-    function triggerStoreRedirection() {
-        const parentDoc = window.parent.document;
-        const router = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText.includes('Route Store'));
-        if (router) router.click();
-    }
 
     async function evaluatePinAuthorization() {
         const pinValue = document.getElementById("pinField").value.trim();
