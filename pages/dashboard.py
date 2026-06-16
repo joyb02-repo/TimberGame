@@ -1,6 +1,6 @@
 # ====================================================================
 # PROJECT: TIMBER MEDALLION PORTFOLIO SYSTEM
-# FILE: pages/dashboard.py (COMPLETE DIRECT MONOLITH)
+# FILE: pages/dashboard.py (COMPLETE MONOLITH - ATTRIBUTE ERROR FIXED)
 # ====================================================================
 
 import streamlit as st
@@ -118,9 +118,20 @@ if not data or data.get("status") != "success":
     st.error("Data Matrix Synchronization Failure. Verify session state architecture configuration tokens.")
     st.stop()
 
-# Process active structural dictionaries
-medallions = data.get("medallions", {})
+# Process active structural objects/lists safely
+medallions_raw = data.get("medallions", {})
 totals = data.get("totals", {"total_collected": 0, "total_value": 0})
+
+# SAFE CONVERSION matrix handling: If API provides an ordered list instead of a map dictionary
+medallions = {}
+if isinstance(medallions_raw, list):
+    for item in medallions_raw:
+        if isinstance(item, dict) and "id" in item:
+            medallions[item["id"]] = item
+        elif isinstance(item, dict) and "key" in item:
+            medallions[item["key"]] = item
+else:
+    medallions = medallions_raw
 
 # Ordered array tracking matching inventory rendering maps
 medallion_order = ["SPRC", "PINE", "MRNT", "BALS", "OAKW", "MAPL", "WALN", "CHER", "MHGN", "EBNY", "RSWD", "AGAR"]
@@ -131,12 +142,12 @@ for idx, key in enumerate(medallion_order):
     with cols[idx]:
         m_info = medallions.get(key, {"count": 0, "image": "", "label": key, "unlocked": False})
         
-        if m_info["unlocked"] and m_info["count"] > 0:
+        if m_info.get("unlocked") and m_info.get("count", 0) > 0:
             st.markdown(f"""
                 <div style="text-align: center; margin-bottom: 20px;">
-                    <img src="{m_info['image']}" style="width: 100%; max-width: 65px; height: auto; margin-bottom: 8px;" />
-                    <div style="color: #F4D068; font-size: 13px; font-weight: 700;">x{m_info['count']}</div>
-                    <div style="color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">{m_info['label']}</div>
+                    <img src="{m_info.get('image', '')}" style="width: 100%; max-width: 65px; height: auto; margin-bottom: 8px;" />
+                    <div style="color: #F4D068; font-size: 13px; font-weight: 700;">x{m_info.get('count', 0)}</div>
+                    <div style="color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">{m_info.get('label', key)}</div>
                 </div>
             """, unsafe_allow_html=True)
         else:
@@ -156,7 +167,7 @@ with col_metric_1:
     st.markdown(f"""
         <div style="background: #161925; border: 1px solid #23273A; border-radius: 6px; padding: 15px; text-align: center;">
             <div style="color: rgba(255,255,255,0.4); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Collection Value</div>
-            <div style="color: #F4D068; font-size: 24px; font-weight: 700; font-family: monospace;">${totals['total_value']:,}</div>
+            <div style="color: #F4D068; font-size: 24px; font-weight: 700; font-family: monospace;">${totals.get('total_value', 0):,}</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -164,7 +175,7 @@ with col_metric_2:
     st.markdown(f"""
         <div style="background: #161925; border: 1px solid #23273A; border-radius: 6px; padding: 15px; text-align: center;">
             <div style="color: rgba(255,255,255,0.4); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Medallions Collected</div>
-            <div style="color: white; font-size: 24px; font-weight: 700; font-family: monospace;">{totals['total_collected']}</div>
+            <div style="color: white; font-size: 24px; font-weight: 700; font-family: monospace;">{totals.get('total_collected', 0)}</div>
         </div>
     """, unsafe_allow_html=True)
 
