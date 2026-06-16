@@ -4,7 +4,7 @@ import os
 import base64
 
 # ====================================================================
-# PLATINUM MASTER ARCHITECTURE WITH NATIVE CLIENT INTEGRATION
+# PLATINUM MASTER ARCHITECTURE WITH NATIVE SERVER EXECUTION
 # ====================================================================
 
 API_URL = st.secrets["API_URL"]
@@ -20,28 +20,31 @@ MEDALLION_COLUMNS = [
 
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide")
 
+# Initialize cross-boundary session state values
+if "mined_item" not in st.session_state:
+    st.session_state["mined_item"] = ""
+
 # ====================================================================
-# PHASE 1: SERVER-SIDE TRANSACTION HANDLER (THE FIX)
+# PHASE 1: COMPONENT SEPARATED CLAIM CONTROLLER (THE REPAIR)
 # ====================================================================
-# Runs entirely outside the HTML sandbox window container context
-if "claim_item" in st.query_params:
-    target_mined = st.query_params["claim_item"]
-    try:
-        # Construct exact operational request structure expected by the sheet endpoint
-        payload = {
-            "action": "mineMedallion", 
-            "item": target_mined, 
-            "username": st.session_state["username"]
-        }
-        res = requests.post(API_URL, json=payload, timeout=15)
-        if res.status_code == 200:
-            # Wipe local cache cleanly so new counters manifest instantly
-            st.cache_data.clear() 
-            # Reset query string values to finalize navigation loop cleanly
-            st.query_params.clear() 
-            st.rerun() 
-    except Exception as e:
-        st.error(f"Failed to record mined item to cloud sheet: {e}")
+def commit_claim_to_sheets():
+    """Executes server-to-server POST payload transfer bypassing iframe security constraints."""
+    target_item = st.session_state["mined_item"]
+    if target_item:
+        try:
+            payload = {
+                "action": "mineMedallion", 
+                "item": target_item, 
+                "username": st.session_state["username"]
+            }
+            res = requests.post(API_URL, json=payload, timeout=15)
+            if res.status_code == 200:
+                # Flush cached states and reset runtime flags
+                st.cache_data.clear()
+                st.session_state["mined_item"] = ""
+                st.rerun()
+        except Exception as e:
+            st.error(f"Failed to record mined item to cloud sheet: {e}")
 
 @st.cache_data(ttl=1)
 def fetch_all_sheet_data(user_id):
@@ -70,7 +73,7 @@ def get_image_base64(path):
             return base64.b64encode(image_file.read()).decode()
     return None
 
-# Retrieve system parameters bounded to execution context
+# Load dataset components
 live_data, live_inventory, summary_value, summary_collected = fetch_all_sheet_data(st.session_state["username"])
 
 if not summary_value.strip().startswith("$") and "Loading" not in summary_value:
@@ -84,8 +87,13 @@ for wood in MEDALLION_COLUMNS:
         asset_map_js += f"'{wood}': 'data:image/png;base64,{b64}',"
 asset_map_js += "}"
 
+# Look up hidden query-string bridges coming out of web elements
+if "sync_target" in st.query_params:
+    st.session_state["mined_item"] = st.query_params["sync_target"]
+    st.query_params.clear()
+
 # ====================================================================
-# HTML/CSS RENDER CONTEXT
+# HTML/CSS RENDER CONTEXT (Clean component spacing rules preserved)
 # ====================================================================
 html_base_template = """
 <style>
@@ -127,15 +135,12 @@ html_base_template = """
     .mine-button:hover { transform: scale(1.05); }
     .mine-button:disabled { opacity: 0.6; cursor: not-allowed; transform: scale(1) !important; background-color: #23273A !important; color: #718096 !important; }
     
-    .animation-display { margin-top: 20px; height: 240px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
+    .animation-display { margin-top: 20px; height: 200px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
     .spin-box { width: 140px; height: 140px; min-height: 140px; border-radius: 12px; background: #161925; border: 3px solid #23273A; display: none; align-items: center; justify-content: center; box-sizing: border-box; }
     .spin-box img { width: 88%; height: 88%; object-fit: contain; }
     .outcome-text-wrapper { margin-top: 15px; height: 35px; text-align: center; opacity: 0; transition: opacity 0.2s ease-in-out; }
     .outcome-top { font-size: 11px; font-weight: 600; color: #718096; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
     .outcome-bottom { font-size: 18px; font-weight: 800; color: #F4D068; text-transform: uppercase; }
-    .claim-button { margin-top: 14px; width: 160px; height: 32px; background-color: transparent; border: 2px solid #F4D068; border-radius: 4px; color: #F4D068; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; opacity: 0; transform: translateY(5px); transition: all 0.2s ease-in-out; }
-    .claim-button.visible { opacity: 1; transform: translateY(0); }
-    .claim-button:hover { background-color: #F4D068; color: #0E1117; }
 </style>
 
 <div class="portfolio-title">Timber Medallion Portfolio</div>
@@ -164,7 +169,6 @@ __GRID_ITEMS_PLACEHOLDER__
             <div class="outcome-top">Successfully Mined:</div>
             <div class="outcome-bottom" id="itemNameTxt"></div>
         </div>
-        <button class="claim-button" id="claimBtn" onclick="commitClaimToSheets()">Claim Medallion</button>
     </div>
 </div>
 
@@ -179,11 +183,9 @@ __GRID_ITEMS_PLACEHOLDER__
         const img = document.getElementById('cyclerImg');
         const wrapper = document.getElementById('outcomeWrapper');
         const itemTxt = document.getElementById('itemNameTxt');
-        const claimBtn = document.getElementById('claimBtn');
         
         btn.disabled = true;
         wrapper.style.opacity = "0";
-        claimBtn.classList.remove('visible');
         box.style.display = "flex";
         box.style.borderColor = "#23273A";
         
@@ -200,34 +202,21 @@ __GRID_ITEMS_PLACEHOLDER__
                 speed += 14; 
                 setTimeout(cycle, speed);
             } else {
-                if (assetLibrary[selectedItem]) img.src = assetLibrary[targetWindow() ? selectedItem : currentItem];
-                itemTxt.innerText = selectedItem.toUpperCase() + " MEDALLION!";
+                const finalSelection = assetLibrary[selectedItem] ? selectedItem : currentItem;
+                if (assetLibrary[selectedItem]) img.src = assetLibrary[finalSelection];
+                itemTxt.innerText = finalSelection.toUpperCase() + " MEDALLION!";
                 wrapper.style.opacity = "1";
-                claimBtn.classList.add('visible');
+                
+                // Transmit item safely back up across sandbox window definitions
+                setTimeout(() => {
+                    const win = (window.self !== window.top) ? window.parent : window;
+                    const curUrl = new URL(win.location.href);
+                    curUrl.searchParams.set("sync_target", finalSelection);
+                    win.location.href = curUrl.toString();
+                }, 900);
             }
         }
         setTimeout(cycle, speed);
-    }
-
-    function targetWindow() {
-        try {
-            return window.self !== window.top ? window.parent : window;
-        } catch (e) {
-            return window;
-        }
-    }
-
-    function commitClaimToSheets() {
-        if (!selectedItem) return;
-        const claimBtn = document.getElementById('claimBtn');
-        claimBtn.disabled = true;
-        claimBtn.innerText = "Saving...";
-        
-        // Break out of the sandboxed cross-origin framework cleanly via parent target matching
-        const win = targetWindow();
-        const curUrl = new URL(win.location.href);
-        curUrl.searchParams.set("claim_item", selectedItem);
-        win.location.href = curUrl.toString();
     }
 </script>
 """
@@ -287,14 +276,38 @@ for wood_name in MEDALLION_COLUMNS:
     </div>
     """
 
-# Variable injections via safe replacements
+# Dynamic string injections
 html_elements = html_base_template.replace("__GRID_ITEMS_PLACEHOLDER__", grid_elements_html)
 html_elements = html_elements.replace("__VALUE_PLACEHOLDER__", summary_value)
 html_elements = html_elements.replace("__COLLECTED_PLACEHOLDER__", summary_collected)
 html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
-html_elements = html_elements.replace("__USERNAME_PLACEHOLDER__", st.session_state["username"])
 
-st.components.v1.html(html_elements, height=750, scrolling=False)
+# Display core UI iframe
+st.components.v1.html(html_elements, height=690, scrolling=False)
+
+# ====================================================================
+# PHASE 2: NATIVE LAYOUT INTERACTION CONTEXT
+# ====================================================================
+# Custom design match for the layout system
+st.markdown("""
+<style>
+    div[data-testid="stButton"] { display: flex; justify-content: center; margin-top: -65px; }
+    div[data-testid="stButton"] button {
+        width: 160px; height: 34px; background-color: transparent !important; 
+        border: 2px solid #F4D068 !important; color: #F4D068 !important; 
+        font-size: 11px !important; font-weight: 700 !important; 
+        text-transform: uppercase !important; letter-spacing: 0.5px;
+        transition: all 0.2s ease-in-out !important; border-radius: 4px !important;
+    }
+    div[data-testid="stButton"] button:hover {
+        background-color: #F4D068 !important; color: #0E1117 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Render the button securely via server thread whenever an asset item state becomes selected
+if st.session_state["mined_item"]:
+    st.button("Claim Medallion", on_click=commit_claim_to_sheets)
 
 
 # ====================================================================
@@ -308,8 +321,4 @@ st.components.v1.html(html_elements, height=750, scrolling=False)
 #      probability = f"{prob_val}%"
 #  except ValueError:
 #      probability = f"{prob_str}%" if prob_str else "N/A"
-#
-#  body { padding: 50px 0 0 0; }
-#  .dashboard-row { margin-top: 45px; }
-#  st.components.v1.html(html_elements, height=770, scrolling=False)
 # ====================================================================
