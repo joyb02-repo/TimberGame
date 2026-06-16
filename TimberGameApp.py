@@ -10,6 +10,7 @@ import base64
 
 API_URL = st.secrets["API_URL"]
 
+# Initialize session structures
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 if "user_passcode" not in st.session_state:
@@ -36,96 +37,109 @@ def get_image_base64(path):
             return base64.b64encode(image_file.read()).decode()
     return None
 
+# Inject Global Background Gridded Theme Stylesheet so it covers BOTH login and app screens uniformly
+st.markdown("""
+<style>
+    .stApp {
+        background-color: #0E1117;
+        background-image: linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+                          linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+        background-size: 24px 24px;
+    }
+    /* Hide default Streamlit visual headers to keep the custom theme pristine */
+    header, [data-testid="stHeader"] { visibility: hidden; height: 0px; }
+</style>
+""", unsafe_with_html=True)
+
 # ====================================================================
 # ARCHITECTURE SPLIT - INTERACTION PANEL A: GATEWAY LOGIN CONSOLE
 # ====================================================================
 if not st.session_state["authenticated"]:
-    html_login_template = """
+    # Custom CSS styled Container Row to align the login console card perfectly center
+    st.markdown("""
     <style>
-        body {
-            margin: 0; padding: 0; background-color: #0E1117;
-            background-image: linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
-            background-size: 24px 24px; font-family: 'Inter', system-ui, sans-serif;
-            display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden;
+        .login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-top: 10vh;
+            width: 100%;
         }
         .login-card {
-            background: #161925; border: 1px solid #23273A; border-radius: 12px;
-            padding: 40px; width: 340px; text-align: center;
+            background: #161925; 
+            border: 1px solid #23273A; 
+            border-radius: 12px;
+            padding: 40px; 
+            width: 360px; 
+            text-align: center;
             box-shadow: 0 15px 35px rgba(0,0,0,0.4);
         }
-        .login-title { font-size: 20px; font-weight: 600; color: #FFFFFF; margin-bottom: 8px; letter-spacing: 0.5px; }
-        .login-subtitle { font-size: 12px; color: rgba(255, 255, 255, 0.3); margin-bottom: 30px; line-height: 1.4; }
-        .login-input { width: 100%; height: 44px; background: #0E1117; border: 1px solid #23273A; border-radius: 6px; color: #FFF; text-align: center; font-size: 16px; font-weight: 700; letter-spacing: 6px; outline: none; margin-bottom: 16px; box-sizing: border-box; transition: border-color 0.15s; }
-        .login-input:focus { border-color: #3D4563; }
-        .login-btn { width: 100%; height: 44px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: transform 0.15s, opacity 0.15s; box-shadow: 0 4px 15px rgba(244, 208, 104, 0.15); }
-        .login-btn:hover { transform: scale(1.02); }
-        .login-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        .err-msg { font-size: 11px; font-weight: 600; color: #ef4444; margin-top: 14px; height: 14px; }
+        .login-title { font-size: 20px; font-weight: 600; color: #FFFFFF; margin-bottom: 8px; letter-spacing: 0.5px; font-family: 'Inter', sans-serif; }
+        .login-subtitle { font-size: 12px; color: rgba(255, 255, 255, 0.3); margin-bottom: 24px; line-height: 1.4; font-family: 'Inter', sans-serif; }
     </style>
-    <div class="login-card">
-        <div class="login-title">Portfolio System Access</div>
-        <div class="login-subtitle">Enter your 4-digit master passcode key to authenticate transaction nodes.</div>
-        <input class="login-input" type="password" id="passField" placeholder="••••" maxlength="4" onkeydown="if(event.key==='Enter') executeLoginPipeline()" />
-        <button class="login-btn" id="loginBtn" onclick="executeLoginPipeline()">Verify Passcode</button>
-        <div class="err-msg" id="msgConsole"></div>
-    </div>
-    <script>
-        function executeLoginPipeline() {
-            const pass = document.getElementById("passField").value.trim();
-            const consoleBox = document.getElementById("msgConsole");
-            const btn = document.getElementById("loginBtn");
-            
-            if (pass.length < 4) { 
-                consoleBox.innerText = "Please complete passcode matrix entry."; 
-                return; 
-            }
-            
-            btn.disabled = true; 
-            btn.innerText = "AUTHENTICATING..."; 
-            consoleBox.innerText = "";
-            
-            // FIX: Use an Image Ping Request instead of fetch(). 
-            // This forces the browser to treat it like loading an image layout element, which entirely bypasses CORS network blockage rules.
-            const targetUrl = "__API_URL_PLACEHOLDER__";
-            const pingUrl = targetUrl + "?action=fetchData&passcode=" + encodeURIComponent(pass);
-            
-            const imgPing = new Image();
-            
-            // Because Google script returns JSON instead of an image file, it will naturally trigger the 'onerror' channel.
-            // But if it reaches the script, Google still registers the hit! We force the parent URL to route into the verification stream.
-            imgPing.onload = imgPing.onerror = function() {
-                setTimeout(() => {
-                    window.parent.location.search = "?auth_passcode=" + encodeURIComponent(pass);
-                }, 400);
-            };
-            
-            imgPing.src = pingUrl;
-        }
-    </script>
-    """.replace("__API_URL_PLACEHOLDER__", API_URL)
+    """, unsafe_with_html=True)
     
-    query_params = st.query_params
-    if "auth_passcode" in query_params:
-        test_passcode = query_params["auth_passcode"]
+    # Render UI Structure
+    st.markdown('<div class="login-wrapper"><div class="login-card">', unsafe_with_html=True)
+    st.markdown('<div class="login-title">Portfolio System Access</div>', unsafe_with_html=True)
+    st.markdown('<div class="login-subtitle">Enter your 4-digit master passcode key to authenticate transaction nodes.</div>', unsafe_with_html=True)
+    
+    # Native Streamlit Form to manage clean state actions
+    with st.form("login_form", clear_on_submit=False):
+        passcode_input = st.text_input(
+            label="Passcode Input Gate",
+            value="",
+            max_chars=4,
+            type="password",
+            placeholder="••••",
+            label_visibility="collapsed"
+        )
         
-        # Python securely double-checks the passcode directly server-side (where CORS security blocks don't exist)
-        try:
-            chk = requests.get(API_URL, params={"action": "fetchData", "passcode": test_passcode}, timeout=10)
-            if chk.status_code == 200 and chk.json().get("status") == "success":
-                st.session_state["user_passcode"] = test_passcode
-                st.session_state["authenticated"] = True
-                st.session_state["username"] = chk.json().get("username", "User")
-                st.query_params.clear() 
-                st.rerun()
+        # Override native form submit button cosmetics to perfectly match our theme
+        st.markdown("""
+        <style>
+            div[data-testid="stForm"] { border: none !important; padding: 0 !important; }
+            button[kind="primaryFormSubmit"] {
+                width: 100% !important; height: 44px !important; background-color: #F4D068 !important; 
+                border: none !important; border-radius: 6px !important; color: #0E1117 !important; 
+                font-size: 13px !important; font-weight: 700 !important; text-transform: uppercase !important; 
+                letter-spacing: 1px !important; cursor: pointer !important; margin-top: 10px !important;
+            }
+            button[kind="primaryFormSubmit"]:hover { transform: scale(1.02); }
+            input[type="password"] {
+                background-color: #0E1117 !important; border: 1px solid #23273A !important; 
+                color: #FFF !important; text-align: center !important; font-size: 20px !important; 
+                font-weight: 700 !important; letter-spacing: 8px !important; height: 44px !important;
+            }
+        </style>
+        """, unsafe_with_html=True)
+        
+        submit_login = st.form_submit_button("Verify Passcode")
+        
+        if submit_login:
+            clean_pass = passcode_input.strip()
+            if len(clean_pass) < 4:
+                st.error("Please complete passcode matrix entry.")
             else:
-                # If passcode was actually wrong, show error underneath box
-                st.query_params.clear()
-                st.sidebar.error("Authentication rejected: Master passcode mismatch.")
-        except:
-            pass
-            
-    st.components.v1.html(html_login_template, height=650, scrolling=False)
+                with st.spinner("Authenticating transaction node..."):
+                    try:
+                        # Direct Server-to-Server network communication (No CORS limitations!)
+                        chk = requests.get(API_URL, params={"action": "fetchData", "passcode": clean_pass}, timeout=12)
+                        if chk.status_code == 200:
+                            res_data = chk.json()
+                            if res_data.get("status") == "success":
+                                st.session_state["user_passcode"] = clean_pass
+                                st.session_state["username"] = res_data.get("username", "User")
+                                st.session_state["authenticated"] = True
+                                st.rerun()
+                            else:
+                                st.error(res_data.get("message", "Invalid passcode credentials."))
+                        else:
+                            st.error(f"Sheet returned error status: {chk.status_code}")
+                    except Exception as err:
+                        st.error(f"Network handshake failed: {str(err)}")
+                        
+    st.markdown('</div></div>', unsafe_with_html=True)
 
 # ====================================================================
 # ARCHITECTURE SPLIT - INTERACTION PANEL B: VERIFIED MASTER ECOSYSTEM
@@ -160,10 +174,8 @@ else:
     html_base_template = """
     <style>
         body {
-            margin: 0; padding: 25px 0 0 0; background-color: #0E1117;
-            background-image: linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
-            background-size: 24px 24px; font-family: 'Inter', system-ui, sans-serif;
+            margin: 0; padding: 25px 0 0 0; background: transparent;
+            font-family: 'Inter', system-ui, sans-serif;
         }
         .portfolio-title { text-align: center; font-size: 24px; font-weight: 600; color: #FFFFFF; margin-bottom: 8px; }
         .portfolio-intro { text-align: center; max-width: 800px; margin: 0 auto 20px auto; font-size: 13px; line-height: 1.6; color: rgba(255, 255, 255, 0.25); }
@@ -282,12 +294,10 @@ else:
             const imgPing = new Image();
             
             imgPing.onload = imgPing.onerror = function() {
-                // Pin verification channel response redirect loop
                 setTimeout(async () => {
                     try {
                         const res = await fetch(endpoint + "?action=fetchData&passcode=__PASSCODE_RAW__");
                         const data = await res.json();
-                        // If it works or if feedback checks register, unlock console layout natively
                         feedback.style.color = "#10b981"; 
                         feedback.innerText = "Access granted! Mining console unlocked.";
                         document.getElementById("pinField").disabled = true; 
