@@ -15,7 +15,7 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
 
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide", initial_sidebar_state="collapsed")
 
-# 🎯 FORCED OVERLAY OVERWRITE: Completely decouples buttons from the document layout flow
+# 🎯 FIXED FIXED CONTAINER OVERWRITE: Prevents vertical text squeezing or layout shifting
 st.markdown("""
 <style>
     .stApp {
@@ -27,14 +27,17 @@ st.markdown("""
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 15px !important; padding-bottom: 10px !important; max-width: 100% !important; }
     
-    /* 🛠️ ABSOLUTE LAYER STRIPPING: Eliminates block heights for top-level utility wrapper structures */
+    /* 🛠️ PREVENT VERTI-SQUEEZE: Keeps containers full width but eliminates their height footprint */
     [data-testid="stVerticalBlock"] > div:nth-child(1),
     [data-testid="stVerticalBlock"] > div:nth-child(2) {
-        position: absolute !important;
-        height: 0px !important;
-        width: 0px !important;
+        width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
+    }
+    
+    /* Pulls up the remaining dashboard content to swallow up empty element spaces */
+    [data-testid="stVerticalBlock"] > div:nth-child(3) {
+        margin-top: -80px !important;
     }
 
     /* 🔄 ABSOLUTE ANCHOR: FIXES REFRESH BUTTON TO THE TOP LEFT */
@@ -49,6 +52,8 @@ st.markdown("""
         font-weight: 600 !important;
         border-radius: 6px !important;
         padding: 0.5rem 1.2rem !important;
+        white-space: nowrap !important; /* Force text to stay horizontal */
+        width: auto !important;
         transition: all 0.2s ease !important;
     }
     div.stButton > button[key="sys_refresh_btn"]:hover {
@@ -71,6 +76,8 @@ st.markdown("""
         border: none !important;
         border-radius: 6px !important;
         padding: 0.5rem 1.4rem !important;
+        white-space: nowrap !important; /* Force text to stay horizontal */
+        width: auto !important;
         box-shadow: 0 4px 12px rgba(253, 216, 53, 0.2) !important;
         transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease !important;
     }
@@ -103,12 +110,12 @@ LABEL_MAPPING = {
 # SYSTEM BACKEND PROCESSORS - TOP LEVEL
 # ====================================================================
 
-# Decoupled Action 1: Locks smoothly to Top Left
+# Action 1: Fixed Top Left
 if st.button("Update Data 🔄", key="sys_refresh_btn"):
     st.cache_data.clear()
     st.rerun()
 
-# Decoupled Action 2: Locks smoothly to Top Right
+# Action 2: Fixed Top Right
 if st.button("Visit Store 🛒", key="sys_route_store_btn"):
     st.switch_page("pages/store.py")
 
