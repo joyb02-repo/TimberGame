@@ -43,37 +43,51 @@ st.markdown("""
     }
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     
-    /* Login Form Frame Styling */
+    /* Login Form Frame Styling - Moved higher up on the screen */
     div[data-testid="stForm"] {
         background: #161925 !important;
         border: 1px solid #23273A !important;
         border-radius: 12px !important;
         padding: 40px 40px !important;
         max-width: 440px !important;
-        margin: 120px auto 0 auto !important;
+        margin: 50px auto 0 auto !important;
         box-shadow: 0 20px 45px rgba(0,0,0,0.5) !important;
         text-align: center !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
     }
-    .login-logo-container { width: 100%; text-align: center; margin-bottom: 20px; }
-    .login-logo-container img { max-height: 60px; width: auto; object-fit: contain; }
+    
+    /* Bigger Logo Container Configuration */
+    .login-logo-container { width: 100%; text-align: center; margin-bottom: 25px; }
+    .login-logo-container img { max-height: 110px; width: auto; object-fit: contain; }
+    
     .custom-login-header { font-size: 22px; font-weight: 600; color: #FFFFFF; margin-bottom: 10px; letter-spacing: 0.5px; font-family: 'Inter', sans-serif; }
     .custom-login-sub { font-size: 13px; color: rgba(255, 255, 255, 0.4); margin-bottom: 30px; line-height: 1.5; font-family: 'Inter', sans-serif; }
     
-    /* Masked pass dots code entry input layout styling */
-    div[data-testid="stForm"] div[data-testid="stTextInput"] { max-width: 220px !important; margin: 0 auto 24px auto !important; }
+    /* Masked text field box - Kept compact and neat */
+    div[data-testid="stForm"] div[data-testid="stTextInput"] { max-width: 160px !important; margin: 0 auto 10px auto !important; }
     div[data-testid="stForm"] input {
         background-color: #0E1117 !important; border: 1px solid #23273A !important; border-radius: 6px !important;
-        color: #FFF !important; text-align: center !important; font-size: 36px !important; font-weight: 700 !important;
-        letter-spacing: 12px !important; height: 52px !important; box-sizing: border-box !important; padding: 0px 0px 0px 12px !important;
-        -webkit-text-security: disc !important;
+        color: #FFF !important; text-align: center !important; font-size: 28px !important; font-weight: 700 !important;
+        letter-spacing: 6px !important; height: 46px !important; box-sizing: border-box !important; padding: 0px !important;
     }
+    
+    /* Centering layout rule for the Form Submit Button container row */
+    div[data-testid="stForm"] div.stFormSubmitButton {
+        display: flex !important;
+        justify-content: center !important;
+        width: 100% !important;
+        margin-top: 15px !important;
+    }
+    
     div[data-testid="stForm"] button[kind="primaryFormSubmit"] {
-        width: 100% !important; height: 46px !important; background-color: #F4D068 !important; border: none !important; border-radius: 6px !important;
+        width: 200px !important; height: 44px !important; background-color: #F4D068 !important; border: none !important; border-radius: 6px !important;
         color: #0E1117 !important; font-size: 13px !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 1.5px !important;
     }
+    
+    /* Remove the native 'Press Enter to submit form' utility guidance text prompt completely */
+    p[data-testid="stFormSubmitButtonHelp"] { display: none !important; visibility: hidden; height: 0px !important; margin: 0px !important; padding: 0px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -83,6 +97,7 @@ with st.form("secure_login_gateway"):
     st.markdown('<div class="custom-login-header">Portfolio System Access</div>', unsafe_allow_html=True)
     st.markdown('<div class="custom-login-sub">Enter your 4-digit master passcode key to authenticate transaction nodes.</div>', unsafe_allow_html=True)
     
+    # Text input field configuration with masked parameter data handling
     input_passcode = st.text_input("Passcode", type="password", label_visibility="collapsed", max_chars=4)
     submit_btn = st.form_submit_button("Verify Passcode")
     
