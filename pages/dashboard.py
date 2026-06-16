@@ -29,7 +29,6 @@ LABEL_MAPPING = {
 }
 
 # Advanced Global Stylesheet Injection
-# Advanced Global Stylesheet Injection - Nuke by key attributes directly
 st.markdown("""
 <style>
     .stApp {
@@ -40,10 +39,24 @@ st.markdown("""
     }
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 20px !important; padding-bottom: 10px !important; max-width: 100% !important; }
+    
+    /* Absolute target to intercept and hide the hidden-routing-box container and its elements */
+    [data-testid="stVerticalBlock"] > div:has(.hidden-routing-box),
+    div.hidden-routing-box,
+    div.hidden-routing-box button {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0px !important;
+        width: 0px !important;
+        position: absolute !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# Encapsulating background utility hooks inside a strictly blocked CSS class container
 # ====================================================================
 # SYSTEM BACKEND PROCESSORS (INVISIBLE NAVIGATION BRIDGES)
 # ====================================================================
@@ -53,24 +66,12 @@ if st.button("Update Data 🔄", key="sys_refresh_btn"):
     st.cache_data.clear()
     st.rerun()
 
-# 2. Native st.html targets the container built right below it and vaporizes it
-st.html("""
-<style>
-    /* Precision strike: Find the Streamlit block wrapping our specific key and drop it */
-    [data-testid="stVerticalBlock"] > div:has(button[key="sys_route_store_btn"]) {
-        display: none !important;
-        visibility: hidden !important;
-        height: 0px !important;
-        position: absolute !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-</style>
-""")
-
-# This is the button the iframe clicks in the background. It is now 100% invisible.
+# 2. Strict component injection to prevent layout bleed through
+st.markdown('<div class="hidden-routing-box">', unsafe_allow_html=True)
 if st.button("Route Store", key="sys_route_store_btn"):
     st.switch_page("pages/store.py")
+st.markdown('</div>', unsafe_allow_html=True)
+
 
 def get_image_base64(path):
     if os.path.exists(path):
