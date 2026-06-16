@@ -15,20 +15,8 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
 
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide", initial_sidebar_state="collapsed")
 
-API_URL = st.secrets["API_URL"]
-
-MEDALLION_COLUMNS = [
-    "Spruce", "Pine", "Meranti", "Balsa", "Oak", "Maple", 
-    "Walnut", "Cherry", "Mahogany", "Ebony", "Rosewood", "Agarwood"
-]
-
-LABEL_MAPPING = {
-    "Spruce": "SPRC", "Pine": "PINE", "Meranti": "MRNT", "Balsa": "BALS",
-    "Oak": "OAKW", "Maple": "MAPL", "Walnut": "WALN", "Cherry": "CHER",
-    "Mahogany": "MHGN", "Ebony": "EBNY", "Rosewood": "RSWD", "Agarwood": "AGAR"
-}
-
-# Advanced Global Stylesheet Injection
+# 🎯 CRITICAL FIX: The CSS MUST be injected BEFORE any button logic runs.
+# This ensures that even when st.switch_page() halts execution, the CSS is already in the DOM.
 st.markdown("""
 <style>
     .stApp {
@@ -40,10 +28,10 @@ st.markdown("""
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 20px !important; padding-bottom: 10px !important; max-width: 100% !important; }
     
-    /* 🎯 PERFECT REVERSED HIDER: Vaporizes slot 1 (Route Store) completely, leaves slot 2 untouched */
+    /* Absolute Nuke: Vaporizes the first structural container child (Route Store) completely */
+    [data-testid="stVerticalBlock"] > div:nth-child(1),
     button[key="sys_route_store_btn"],
-    div:has(> button[key="sys_route_store_btn"]),
-    [data-testid="stVerticalBlock"] > div:nth-child(1) {
+    div:has(> button[key="sys_route_store_btn"]) {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -59,15 +47,28 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+API_URL = st.secrets["API_URL"]
+
+MEDALLION_COLUMNS = [
+    "Spruce", "Pine", "Meranti", "Balsa", "Oak", "Maple", 
+    "Walnut", "Cherry", "Mahogany", "Ebony", "Rosewood", "Agarwood"
+]
+
+LABEL_MAPPING = {
+    "Spruce": "SPRC", "Pine": "PINE", "Meranti": "MRNT", "Balsa": "BALS",
+    "Oak": "OAKW", "Maple": "MAPL", "Walnut": "WALN", "Cherry": "CHER",
+    "Mahogany": "MHGN", "Ebony": "EBNY", "Rosewood": "RSWD", "Agarwood": "AGAR"
+}
+
 # ====================================================================
 # SYSTEM BACKEND PROCESSORS - TOP LEVEL
 # ====================================================================
 
-# This is child slot 1 - targeted and hidden by our updated CSS rule
+# This is child slot 1 - Permanently vaporized by the top-level CSS block
 if st.button("Route Store", key="sys_route_store_btn"):
     st.switch_page("pages/store.py")
 
-# This is child slot 2 - pristine, visible, and fully interactive
+# This is child slot 2 - Stays 100% clean, visible, and functional
 if st.button("Update Data 🔄", key="sys_refresh_btn"):
     st.cache_data.clear()
     st.rerun()
