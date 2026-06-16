@@ -16,26 +16,23 @@ MEDALLION_COLUMNS = [
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide")
 
 # ====================================================================
-# PHASE 1: NATIVE CLAIM BACKEND SYNC
+# PHASE 1: PROCESS INBOUND CLAIMS BEFORE RETRIEVING LIVE DATA
 # ====================================================================
-def process_claim_to_google_sheets(item_name):
+if "claim_item" in st.query_params:
+    target_mined = st.query_params["claim_item"]
     try:
         payload = {
             "action": "mineMedallion", 
-            "item": item_name, 
+            "item": target_mined, 
             "username": st.session_state["username"]
         }
         res = requests.post(API_URL, json=payload, timeout=15)
         if res.status_code == 200:
             st.cache_data.clear() 
-            st.rerun()
+            st.query_params.clear() 
+            st.rerun() 
     except Exception as e:
         st.error(f"Failed to record mined item to cloud sheet: {e}")
-
-if "hidden_claim_input" in st.session_state and st.session_state["hidden_claim_input"]:
-    claim_target = st.session_state["hidden_claim_input"]
-    st.session_state["hidden_claim_input"] = "" 
-    process_claim_to_google_sheets(claim_target)
 
 @st.cache_data(ttl=1)
 def fetch_all_sheet_data(user_id):
@@ -206,12 +203,10 @@ __GRID_ITEMS_PLACEHOLDER__
         claimBtn.disabled = true;
         claimBtn.innerText = "Saving...";
         
-        window.parent.postMessage({
-            type: 'streamlit:set_widget_value',
-            from_macro: true,
-            widget_id: 'hidden_claim_input',
-            value: selectedItem
-        }, '*');
+        const topWindow = window.parent || window;
+        const curUrl = new URL(topWindow.location.href);
+        curUrl.searchParams.set("claim_item", selectedItem);
+        topWindow.location.href = curUrl.toString();
     }
 </script>
 """
@@ -269,10 +264,4 @@ html_elements = html_elements.replace("__COLLECTED_PLACEHOLDER__", summary_colle
 html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
 html_elements = html_elements.replace("__USERNAME_PLACEHOLDER__", st.session_state["username"])
 
-st.components.v1.html(html_elements, height=770, scrolling=False, key="medallion_mesh_component")
-
-st.text_input("", key="hidden_claim_input", label_visibility="collapsed")
-st.markdown(
-    "<style>div[data-testid='stTextInput'] {display:none !important;}</style>", 
-    unsafe_allow_html=True
-)
+st.components.v1.html(html_elements, height=770, scrolling=False)
