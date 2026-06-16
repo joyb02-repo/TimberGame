@@ -3,6 +3,10 @@ import requests
 import os
 import base64
 
+# ====================================================================
+# PLATINUM MASTER ARCHITECTURE WITH NATIVE CLIENT INTEGRATION
+# ====================================================================
+
 API_URL = st.secrets["API_URL"]
 
 # Establish default user context
@@ -17,11 +21,13 @@ MEDALLION_COLUMNS = [
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide")
 
 # ====================================================================
-# PHASE 1: PROCESS INBOUND CLAIMS BEFORE RETRIEVING LIVE DATA
+# PHASE 1: SERVER-SIDE TRANSACTION HANDLER (THE FIX)
 # ====================================================================
+# Runs entirely outside the HTML sandbox window container context
 if "claim_item" in st.query_params:
     target_mined = st.query_params["claim_item"]
     try:
+        # Construct exact operational request structure expected by the sheet endpoint
         payload = {
             "action": "mineMedallion", 
             "item": target_mined, 
@@ -29,7 +35,9 @@ if "claim_item" in st.query_params:
         }
         res = requests.post(API_URL, json=payload, timeout=15)
         if res.status_code == 200:
+            # Wipe local cache cleanly so new counters manifest instantly
             st.cache_data.clear() 
+            # Reset query string values to finalize navigation loop cleanly
             st.query_params.clear() 
             st.rerun() 
     except Exception as e:
@@ -62,7 +70,7 @@ def get_image_base64(path):
             return base64.b64encode(image_file.read()).decode()
     return None
 
-# Load up dataset bound explicitly to current user row configuration
+# Retrieve system parameters bounded to execution context
 live_data, live_inventory, summary_value, summary_collected = fetch_all_sheet_data(st.session_state["username"])
 
 if not summary_value.strip().startswith("$") and "Loading" not in summary_value:
@@ -77,7 +85,7 @@ for wood in MEDALLION_COLUMNS:
 asset_map_js += "}"
 
 # ====================================================================
-# HTML/CSS RENDER CONTEXT (Adjusted top padding for hover tooltip safety)
+# HTML/CSS RENDER CONTEXT
 # ====================================================================
 html_base_template = """
 <style>
@@ -215,6 +223,7 @@ __GRID_ITEMS_PLACEHOLDER__
         claimBtn.disabled = true;
         claimBtn.innerText = "Saving...";
         
+        // Break out of the sandboxed cross-origin framework cleanly via parent target matching
         const win = targetWindow();
         const curUrl = new URL(win.location.href);
         curUrl.searchParams.set("claim_item", selectedItem);
@@ -278,12 +287,29 @@ for wood_name in MEDALLION_COLUMNS:
     </div>
     """
 
-# Inject values purely via safe string replacements
+# Variable injections via safe replacements
 html_elements = html_base_template.replace("__GRID_ITEMS_PLACEHOLDER__", grid_elements_html)
 html_elements = html_elements.replace("__VALUE_PLACEHOLDER__", summary_value)
 html_elements = html_elements.replace("__COLLECTED_PLACEHOLDER__", summary_collected)
 html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
 html_elements = html_elements.replace("__USERNAME_PLACEHOLDER__", st.session_state["username"])
 
-# Adjusted height to 750 to accommodate the extra safety gap at the top
 st.components.v1.html(html_elements, height=750, scrolling=False)
+
+
+# ====================================================================
+# ARCHIVAL RECOVERY STORAGE (GOLD MASTER - INACTIVE ARCHIVE)
+# ====================================================================
+#  The old configuration below is retained as an emergency reference block:
+# 
+#  prob_str = str(probability).replace("%", "").strip()
+#  try:
+#      prob_val = float(prob_str)
+#      probability = f"{prob_val}%"
+#  except ValueError:
+#      probability = f"{prob_str}%" if prob_str else "N/A"
+#
+#  body { padding: 50px 0 0 0; }
+#  .dashboard-row { margin-top: 45px; }
+#  st.components.v1.html(html_elements, height=770, scrolling=False)
+# ====================================================================
