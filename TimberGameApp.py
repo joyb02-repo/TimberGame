@@ -4,7 +4,7 @@ import os
 import base64
 
 # ====================================================================
-# PLATINUM MASTER ARCHITECTURE - BACKGROUND FETCH RUNTIME
+# PLATINUM MASTER ARCHITECTURE - STABLE INTEGRATION RUNTIME
 # ====================================================================
 
 API_URL = st.secrets["API_URL"]
@@ -23,6 +23,7 @@ st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide")
 def fetch_all_sheet_data(user_id):
     """Queries details, summary values, and inventories specific to the active user."""
     try:
+        # Explicit json structure used here matching our Apps Script parsing layout
         payload = {"action": "fetchData", "username": user_id}
         response = requests.post(API_URL, json=payload, timeout=12)
         if response.status_code == 200:
@@ -46,7 +47,7 @@ def get_image_base64(path):
             return base64.b64encode(image_file.read()).decode()
     return None
 
-# Load up live sheet balances securely
+# Load up live engine balances cleanly
 live_data, live_inventory, summary_value, summary_collected = fetch_all_sheet_data(st.session_state["username"])
 
 if not str(summary_value).strip().startswith("$"):
@@ -193,24 +194,20 @@ __GRID_ITEMS_PLACEHOLDER__
         claimBtn.innerText = "Saving...";
         
         const targetUrl = "__API_URL_PLACEHOLDER__";
+        const pingUrl = targetUrl + "?action=mineMedallion&username=" + encodeURIComponent("__USERNAME_PLACEHOLDER__") + "&item=" + encodeURIComponent(selectedItem);
         
-        // Use background URL parameters to completely bypass Google's X-Frame iframe restrictions
-        const submissionUrl = targetUrl + "?action=mineMedallion&username=" + encodeURIComponent("__USERNAME_PLACEHOLDER__") + "&item=" + encodeURIComponent(selectedItem);
+        // Use an Image element load target. Images are exempt from iframe cross-origin blocking rules!
+        const imgPing = new Image();
         
-        // Execute background network call without page navigation inside the frame
-        fetch(submissionUrl, { method: 'POST', mode: 'no-cors' })
-            .then(() => {
-                // Instantly force a full page refresh on the top parent Streamlit window
-                setTimeout(() => {
-                    const win = (window.self !== window.top) ? window.parent : window;
-                    win.location.reload();
-                }, 400);
-            })
-            .catch((err) => {
-                // Fallback catch-all to trigger refresh if no-cors forces a silent execution block
+        imgPing.onload = imgPing.onerror = function() {
+            // Trigger parent runtime refresh the moment the cloud registers the update
+            setTimeout(() => {
                 const win = (window.self !== window.top) ? window.parent : window;
                 win.location.reload();
-            });
+            }, 500);
+        };
+        
+        imgPing.src = pingUrl;
     }
 </script>
 """
