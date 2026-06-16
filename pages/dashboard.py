@@ -1,13 +1,13 @@
 # ====================================================================
 # PROJECT: TIMBER MEDALLION PORTFOLIO SYSTEM
-# FILE: pages/dashboard.py (COMPACT FULL-GRID PORT WITH WEIGHTED ODDS)
+# FILE: pages/dashboard.py (COMPACT FULL-GRID PORT WITH FIXED CDF ODDS)
 # ====================================================================
 
 import streamlit as st
 import requests
 import os
 import base64
-import json  # Added to safely stringify lists for JavaScript consumption
+import json  # Safely stringifies lists for JavaScript consumption
 
 # Security Wall: Redirect if not authenticated via root login file
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
@@ -249,15 +249,17 @@ html_base_template = """
         } catch(e) {}
     }
 
-    // Custom Cumulative JavaScript Weight Picker to handle dynamic weights accurately
+    // Cumulative Distribution Function (CDF) Selection Logic
     function selectWeightedWinner(items, itemWeights) {
         const totalWeight = itemWeights.reduce((acc, w) => acc + w, 0);
-        let randomNum = Math.random() * totalWeight;
+        const randomNum = Math.random() * totalWeight;
+        
+        let runningSum = 0;
         for (let i = 0; i < items.length; i++) {
-            if (randomNum < itemWeights[i]) {
+            runningSum += itemWeights[i];
+            if (randomNum <= runningSum) {
                 return items[i];
             }
-            randomNum -= itemWeights[i];
         }
         return items[items.length - 1]; // Safe fallback element
     }
@@ -270,7 +272,7 @@ html_base_template = """
         let counter = 0; 
         let speed = 40; 
         
-        // Selects the winner instantly behind the scenes using dynamic spreadsheet data weights
+        // Selects the winner via proportional data array maps
         selectedItem = selectWeightedWinner(pool, weights);
         
         function cycle() {
@@ -376,9 +378,8 @@ html_elements = html_elements.replace("__USERNAME_UPPER__", st.session_state["us
 html_elements = html_elements.replace("__PASSCODE_RAW__", st.session_state["user_passcode"])
 html_elements = html_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
 
-# Inject the weighted item pool parameters cleanly into the JavaScript framework space
+# Inject parameters directly into Javascript environment configurations
 html_elements = html_elements.replace("__POOL_ITEMS_PLACEHOLDER__", json.dumps(js_pool_items))
 html_elements = html_elements.replace("__POOL_WEIGHTS_PLACEHOLDER__", json.dumps(js_pool_weights))
 
-# Expanded global rendering canvas height context to 900px to fully contain claim triggers cleanly
 st.components.v1.html(html_elements, height=900, scrolling=False)
