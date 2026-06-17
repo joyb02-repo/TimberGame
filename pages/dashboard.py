@@ -15,7 +15,7 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
 
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide", initial_sidebar_state="collapsed")
 
-# 🎯 BASE ENVIRONMENT STYLING
+# 🎯 BASE ENVIRONMENT STYLING & HIDDEN SYNC ACTUATOR
 st.markdown("""
 <style>
     .stApp {
@@ -26,6 +26,13 @@ st.markdown("""
     }
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 25px !important; padding-bottom: 10px !important; max-width: 100% !important; }
+    
+    /* Hide the emergency hard-reload system engine wrapper */
+    div[data-testid="element-container"]:has(button[key="sys_hidden_sync"]) {
+        display: none !important;
+        height: 0px !important;
+        overflow: hidden !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -41,6 +48,11 @@ LABEL_MAPPING = {
     "Oak": "OAKW", "Maple": "MAPL", "Walnut": "WALN", "Cherry": "CHER",
     "Mahogany": "MHGN", "Ebony": "EBNY", "Rosewood": "RSWD", "Agarwood": "AGAR"
 }
+
+# 🔄 HIDDEN ENGINE FORCE-REFRESH ACTUATOR
+if st.button("INTERNAL_SYNC", key="sys_hidden_sync"):
+    st.cache_data.clear()
+    st.rerun()
 
 def get_image_base64(path):
     if os.path.exists(path):
@@ -272,14 +284,24 @@ html_base_template = """
 
     function commitClaimToSheets() {
         if (!selectedItem) return;
-        const claimBtn = document.getElementById('claimBtn'); claimBtn.disabled = true; claimBtn.innerText = "Saving...";
+        const claimBtn = document.getElementById('claimBtn'); 
+        claimBtn.disabled = true; 
+        claimBtn.innerText = "Saving...";
+        
         const pingUrl = endpoint + "?action=mineMedallion&passcode=" + encodeURIComponent("__PASSCODE_RAW__") + "&item=" + encodeURIComponent(selectedItem);
         
         const imgPing = new Image();
         imgPing.onload = imgPing.onerror = function() {
             setTimeout(() => {
-                window.location.reload();
-            }, 500);
+                // ⚡ REVOLUTIONARY IFRAME ESCAPE HANDLER: Target the parent app's runtime engine directly
+                const parentDoc = window.parent.document;
+                const hiddenEngineButton = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText === 'INTERNAL_SYNC');
+                if (hiddenEngineButton) {
+                    hiddenEngineButton.click();
+                } else {
+                    window.location.reload();
+                }
+            }, 600);
         };
         imgPing.src = pingUrl;
     }
