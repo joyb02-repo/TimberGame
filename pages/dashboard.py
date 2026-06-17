@@ -15,7 +15,7 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
 
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide", initial_sidebar_state="collapsed")
 
-# 🎯 BASE ENVIRONMENT STYLING & HIDDEN SYNC ACTUATOR
+# 🎯 BASE ENVIRONMENT STYLING
 st.markdown("""
 <style>
     .stApp {
@@ -26,13 +26,6 @@ st.markdown("""
     }
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 25px !important; padding-bottom: 10px !important; max-width: 100% !important; }
-    
-    /* Hide the emergency hard-reload system engine wrapper */
-    div[data-testid="element-container"]:has(button[key="sys_hidden_sync"]) {
-        display: none !important;
-        height: 0px !important;
-        overflow: hidden !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -49,18 +42,13 @@ LABEL_MAPPING = {
     "Mahogany": "MHGN", "Ebony": "EBNY", "Rosewood": "RSWD", "Agarwood": "AGAR"
 }
 
-# 🔄 HIDDEN ENGINE FORCE-REFRESH ACTUATOR
-if st.button("INTERNAL_SYNC", key="sys_hidden_sync"):
-    st.cache_data.clear()
-    st.rerun()
-
 def get_image_base64(path):
     if os.path.exists(path):
         with open(path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode()
     return None
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=1)
 def fetch_sheet_records(passcode):
     try:
         r = requests.get(API_URL, params={"action": "fetchData", "passcode": passcode}, timeout=15)
@@ -288,20 +276,16 @@ html_base_template = """
         claimBtn.disabled = true; 
         claimBtn.innerText = "Saving...";
         
-        const pingUrl = endpoint + "?action=mineMedallion&passcode=" + encodeURIComponent("__PASSCODE_RAW__") + "&item=" + encodeURIComponent(selectedItem);
+        // Anti-cache bypass signature ensures the sheet updates live immediately
+        const timestamp = new Date().getTime();
+        const pingUrl = endpoint + "?action=mineMedallion&passcode=" + encodeURIComponent("__PASSCODE_RAW__") + "&item=" + encodeURIComponent(selectedItem) + "&_=" + timestamp;
         
         const imgPing = new Image();
         imgPing.onload = imgPing.onerror = function() {
             setTimeout(() => {
-                // ⚡ REVOLUTIONARY IFRAME ESCAPE HANDLER: Target the parent app's runtime engine directly
-                const parentDoc = window.parent.document;
-                const hiddenEngineButton = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText === 'INTERNAL_SYNC');
-                if (hiddenEngineButton) {
-                    hiddenEngineButton.click();
-                } else {
-                    window.location.reload();
-                }
-            }, 600);
+                // Break out of component window frame to force parent context reload completely clean
+                window.parent.location.reload();
+            }, 500);
         };
         imgPing.src = pingUrl;
     }
