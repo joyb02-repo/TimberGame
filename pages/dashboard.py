@@ -1,6 +1,6 @@
 # ====================================================================
 # PROJECT: TIMBER MEDALLION PORTFOLIO SYSTEM
-# FILE: pages/dashboard.py (HORIZONTAL ROW LAYOUT SYSTEM)
+# FILE: pages/dashboard.py (POP-UP MINING WINDOW ENGINE)
 # ====================================================================
 
 import streamlit as st
@@ -15,7 +15,7 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
 
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide", initial_sidebar_state="collapsed")
 
-# 🎯 HORIZONTAL OPPOSITE-ALIGNMENT ENGINE: Forces buttons onto a single level, spread across the page edges
+# 🎯 HORIZONTAL OPPOSITE-ALIGNMENT ENGINE
 st.markdown("""
 <style>
     .stApp {
@@ -27,7 +27,7 @@ st.markdown("""
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 15px !important; padding-bottom: 10px !important; max-width: 100% !important; }
     
-    /* 🛠️ ROW SPLIT SYSTEM: Packs parent structural blocks into a space-between flex row layout */
+    /* ROW SPLIT SYSTEM: Splits buttons onto opposite sides */
     [data-testid="stVerticalBlock"] > div:has(div button[key="sys_refresh_btn"]) {
         width: 100% !important;
         display: flex !important;
@@ -39,14 +39,13 @@ st.markdown("""
         box-sizing: border-box !important;
     }
 
-    /* Keep individual container blocks clean and prevent native block line breaks */
     div[data-testid="element-container"]:has(button[key="sys_refresh_btn"]),
     div[data-testid="element-container"]:has(button[key="sys_route_store_btn"]) {
         display: inline-flex !important;
         width: auto !important;
     }
 
-    /* 🔄 UPDATE DATA BUTTON - Fixed on Left Side */
+    /* 🔄 UPDATE DATA BUTTON - Left Side */
     div.stButton > button[key="sys_refresh_btn"] {
         background-color: #161925 !important;
         border: 1px solid #23273A !important;
@@ -54,7 +53,7 @@ st.markdown("""
         font-weight: 500 !important;
         border-radius: 6px !important;
         padding: 0.45rem 1.5rem !important;
-        width: 240px !important; /* Elegant matching standard dimensions */
+        width: 240px !important;
         transition: all 0.2s ease !important;
         margin: 0 !important;
     }
@@ -64,7 +63,7 @@ st.markdown("""
         color: #FFF !important;
     }
 
-    /* 🛒 VISIT STORE BUTTON - Fixed on Right Side */
+    /* 🛒 VISIT STORE BUTTON - Right Side */
     div.stButton > button[key="sys_route_store_btn"] {
         background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
         color: #FFFFFF !important;
@@ -74,7 +73,7 @@ st.markdown("""
         border: none !important;
         border-radius: 6px !important;
         padding: 0.5rem 2rem !important;
-        width: 240px !important; /* Identical structural size width */
+        width: 240px !important;
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
         margin: 0 !important;
@@ -103,8 +102,6 @@ LABEL_MAPPING = {
 # SYSTEM BACKEND PROCESSORS - TOP LEVEL ACTIONS
 # ====================================================================
 
-# Render sequentially in a single container. The flex row container inside the CSS styles 
-# will pick up these specific keys and align them perfectly across opposite sides.
 if st.button("Update Data 🔄", key="sys_refresh_btn"):
     st.cache_data.clear()
     st.rerun()
@@ -155,6 +152,7 @@ for wood_name in MEDALLION_COLUMNS:
     js_pool_items.append(wood_name)
     js_pool_weights.append(weight_value)
 
+# Main Portfolio View (Without the action elements at the bottom)
 html_base_template = """
 <style>
     body { margin: 0; padding: 10px 0 0 0; background: transparent; font-family: 'Inter', sans-serif; position: relative; }
@@ -196,25 +194,6 @@ html_base_template = """
     .stat-card { background: #161925; border: 1px solid #23273A; border-radius: 6px; padding: 10px 20px; min-width: 180px; text-align: center; }
     .stat-label { font-size: 11px; text-transform: uppercase; color: #718096; margin-bottom: 4px; }
     .stat-value { font-size: 18px; font-weight: 700; color: #F4D068; }
-    
-    .action-container { display: flex; flex-direction: column; align-items: center; margin-top: 25px; width: 100%; }
-    .pin-auth-wrapper { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
-    .pin-input { width: 150px; height: 38px; background: #161925; border: 1px solid #23273A; border-radius: 6px; color: #FFF; text-align: center; font-size: 14px; font-weight: 600; outline: none; }
-    .pin-verify-btn { padding: 0 16px; height: 38px; background: #23273A; border: none; border-radius: 6px; color: #E2E8F0; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
-    .pin-feedback-msg { font-size: 11px; font-weight: 600; margin-bottom: 10px; height: 14px; }
-    
-    .mine-button { width: 424px; height: 46px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }
-    .mine-button:disabled { opacity: 0.35; cursor: not-allowed; background-color: #161925 !important; color: #3D4563 !important; border: 1px solid #23273A; box-shadow: none !important; }
-    
-    .animation-display { margin-top: 20px; height: 240px; display: flex; flex-direction: column; align-items: center; }
-    .spin-box { width: 140px; height: 140px; border-radius: 12px; background: #161925; border: 3px solid #23273A; display: none; align-items: center; justify-content: center; }
-    .spin-box img { width: 88%; height: 88%; object-fit: contain; }
-    .outcome-text-wrapper { margin-top: 15px; height: 35px; text-align: center; opacity: 0; }
-    .outcome-bottom { font-size: 18px; font-weight: 800; color: #F4D068; }
-    
-    .claim-button { margin-top: 14px; width: 160px; height: 32px; background-color: transparent; border: 2px solid #F4D068; border-radius: 4px; color: #F4D068; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; opacity: 0; transform: translateY(5px); transition: all 0.2s; display: inline-block; }
-    .claim-button.visible { opacity: 1 !important; transform: translateY(0) !important; }
-    .claim-button:hover { background-color: #F4D068; color: #0E1117; }
 </style>
 
 <div class="header-wrapper">
@@ -230,105 +209,6 @@ html_base_template = """
     <div class="stat-card"><div class="stat-label">Collection Value</div><div class="stat-value">__VALUE_PLACEHOLDER__</div></div>
     <div class="stat-card"><div class="stat-label">Medallions Collected</div><div class="stat-value">__COLLECTED_PLACEHOLDER__</div></div>
 </div>
-
-<div class="action-container">
-    <div class="pin-auth-wrapper">
-        <input class="pin-input" type="text" id="pinField" placeholder="6-DIGIT PIN" maxlength="6" />
-        <button class="pin-verify-btn" id="verifyBtn" onclick="evaluatePinAuthorization()">Verify PIN</button>
-    </div>
-    <div class="pin-feedback-msg" id="feedbackMsg" style="color: #718096;"></div>
-
-    <button class="mine-button" id="mineBtn" disabled onclick="runMiningSequence()">Mine a Medallion</button>
-    
-    <div class="animation-display">
-        <div class="spin-box" id="cyclerBox"><img id="cyclerImg" src="" /></div>
-        <div class="outcome-text-wrapper" id="outcomeWrapper">
-            <div style="font-size:11px; color:#718096; text-transform:uppercase; letter-spacing:1px;">Successfully Mined:</div>
-            <div class="outcome-bottom" id="itemNameTxt"></div>
-        </div>
-        <button class="claim-button" id="claimBtn" onclick="commitClaimToSheets()">Claim Medallion</button>
-    </div>
-</div>
-
-<script>
-    const assetLibrary = __ASSET_MAP_PLACEHOLDER__;
-    const pool = __POOL_ITEMS_PLACEHOLDER__;
-    const weights = __POOL_WEIGHTS_PLACEHOLDER__;
-    const endpoint = "__API_URL_PLACEHOLDER__";
-    let selectedItem = "";
-
-    async function evaluatePinAuthorization() {
-        const pinValue = document.getElementById("pinField").value.trim();
-        const feedback = document.getElementById("feedbackMsg");
-        const verifyBtn = document.getElementById("verifyBtn");
-        if (pinValue.length < 4) return;
-        
-        try {
-            const response = await fetch(endpoint + "?action=verifyPin&pin=" + encodeURIComponent(pinValue));
-            const result = await response.json();
-            if (result.status === "success") {
-                feedback.style.color = "#10b981"; feedback.innerText = "Access granted!";
-                document.getElementById("pinField").disabled = true; verifyBtn.style.display = "none";
-                document.getElementById("mineBtn").disabled = false;
-            } else {
-                feedback.style.color = "#ef4444"; feedback.innerText = "Invalid code key verification.";
-            }
-        } catch(e) {}
-    }
-
-    function selectWeightedWinner(items, itemWeights) {
-        const totalWeight = itemWeights.reduce((acc, w) => acc + w, 0);
-        const randomNum = Math.random() * totalWeight;
-        let runningSum = 0;
-        for (let i = 0; i < items.length; i++) {
-            runningSum += itemWeights[i];
-            if (randomNum <= runningSum) return items[i];
-        }
-        return items[items.length - 1];
-    }
-
-    function runMiningSequence() {
-        const box = document.getElementById('cyclerBox'); const img = document.getElementById('cyclerImg');
-        const wrapper = document.getElementById('outcomeWrapper'); const itemTxt = document.getElementById('itemNameTxt'); const claimBtn = document.getElementById('claimBtn');
-        document.getElementById('mineBtn').disabled = true; wrapper.style.opacity = "0"; claimBtn.classList.remove('visible'); box.style.display = "flex";
-        
-        let counter = 0; let speed = 40; 
-        selectedItem = selectWeightedWinner(pool, weights);
-        
-        function cycle() {
-            const currentItem = pool[counter % pool.length]; 
-            if (assetLibrary[currentItem]) img.src = assetLibrary[currentItem]; 
-            counter++;
-            if (speed < 320) { 
-                speed += 16; 
-                setTimeout(cycle, speed); 
-            } else {
-                img.src = assetLibrary[selectedItem];
-                itemTxt.innerText = selectedItem.toUpperCase() + "!"; 
-                wrapper.style.opacity = "1"; 
-                claimBtn.classList.add('visible');
-            }
-        }
-        setTimeout(cycle, speed);
-    }
-
-    function commitClaimToSheets() {
-        if (!selectedItem) return;
-        const claimBtn = document.getElementById('claimBtn'); claimBtn.disabled = true; claimBtn.innerText = "Saving...";
-        const pingUrl = endpoint + "?action=mineMedallion&passcode=" + encodeURIComponent("__PASSCODE_RAW__") + "&item=" + encodeURIComponent(selectedItem);
-        
-        const imgPing = new Image();
-        imgPing.onload = imgPing.onerror = function() {
-            setTimeout(() => {
-                const parentDoc = window.parent.document;
-                const refreshActuator = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText.includes('Update Data 🔄'));
-                if (refreshActuator) refreshActuator.click();
-                else window.location.reload();
-            }, 500);
-        };
-        imgPing.src = pingUrl;
-    }
-</script>
 """
 
 grid_elements_html = ""
@@ -390,11 +270,153 @@ for wood_name in MEDALLION_COLUMNS:
 html_elements = html_base_template.replace("__GRID_ITEMS_PLACEHOLDER__", grid_elements_html)
 html_elements = html_elements.replace("__VALUE_PLACEHOLDER__", summary_value)
 html_elements = html_elements.replace("__COLLECTED_PLACEHOLDER__", summary_collected)
-html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
 html_elements = html_elements.replace("__USERNAME_UPPER__", st.session_state["username"].upper())
-html_elements = html_elements.replace("__PASSCODE_RAW__", st.session_state["user_passcode"])
-html_elements = html_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
-html_elements = html_elements.replace("__POOL_ITEMS_PLACEHOLDER__", json.dumps(js_pool_items))
-html_elements = html_elements.replace("__POOL_WEIGHTS_PLACEHOLDER__", json.dumps(js_pool_weights))
 
-st.components.v1.html(html_elements, height=900, scrolling=False)
+st.components.v1.html(html_elements, height=480, scrolling=False)
+
+
+# ====================================================================
+# 🎛️ NEW POP-UP INTERACTIVE DIALOG WINDOW CONTEXT
+# ====================================================================
+
+@st.dialog("Medallion Core Generator", width="large")
+def run_mining_modal_dialog():
+    st.markdown("""
+    <style>
+        div[data-testid="stDialog"] { background-color: #0E1117 !important; border: 1px solid #23273A; }
+        .action-container { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: 10px; }
+        .pin-auth-wrapper { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+        .pin-input { width: 150px; height: 38px; background: #161925; border: 1px solid #23273A; border-radius: 6px; color: #FFF; text-align: center; font-size: 14px; font-weight: 600; outline: none; }
+        .pin-verify-btn { padding: 0 16px; height: 38px; background: #23273A; border: none; border-radius: 6px; color: #E2E8F0; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
+        .pin-feedback-msg { font-size: 11px; font-weight: 600; margin-bottom: 10px; height: 14px; text-align: center; }
+        
+        .mine-button { width: 424px; height: 46px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }
+        .mine-button:disabled { opacity: 0.35; cursor: not-allowed; background-color: #161925 !important; color: #3D4563 !important; border: 1px solid #23273A; box-shadow: none !important; }
+        
+        .animation-display { margin-top: 20px; height: 240px; display: flex; flex-direction: column; align-items: center; }
+        .spin-box { width: 140px; height: 140px; border-radius: 12px; background: #161925; border: 3px solid #23273A; display: none; align-items: center; justify-content: center; }
+        .spin-box img { width: 88%; height: 88%; object-fit: contain; }
+        .outcome-text-wrapper { margin-top: 15px; height: 35px; text-align: center; opacity: 0; }
+        .outcome-bottom { font-size: 18px; font-weight: 800; color: #F4D068; }
+        
+        .claim-button { margin-top: 14px; width: 160px; height: 32px; background-color: transparent; border: 2px solid #F4D068; border-radius: 4px; color: #F4D068; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; opacity: 0; transform: translateY(5px); transition: all 0.2s; display: inline-block; }
+        .claim-button.visible { opacity: 1 !important; transform: translateY(0) !important; }
+        .claim-button:hover { background-color: #F4D068; color: #0E1117; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    modal_html_template = """
+    <div class="action-container">
+        <div class="pin-auth-wrapper">
+            <input class="pin-input" type="text" id="pinField" placeholder="6-DIGIT PIN" maxlength="6" />
+            <button class="pin-verify-btn" id="verifyBtn" onclick="evaluatePinAuthorization()">Verify PIN</button>
+        </div>
+        <div class="pin-feedback-msg" id="feedbackMsg" style="color: #718096;">Enter verification key framework to activate rolling system.</div>
+
+        <button class="mine-button" id="mineBtn" disabled onclick="runMiningSequence()">Mine a Medallion</button>
+        
+        <div class="animation-display">
+            <div class="spin-box" id="cyclerBox"><img id="cyclerImg" src="" /></div>
+            <div class="outcome-text-wrapper" id="outcomeWrapper">
+                <div style="font-size:11px; color:#718096; text-transform:uppercase; letter-spacing:1px;">Successfully Mined:</div>
+                <div class="outcome-bottom" id="itemNameTxt"></div>
+            </div>
+            <button class="claim-button" id="claimBtn" onclick="commitClaimToSheets()">Claim Medallion</button>
+        </div>
+    </div>
+
+    <script>
+        const assetLibrary = __ASSET_MAP_PLACEHOLDER__;
+        const pool = __POOL_ITEMS_PLACEHOLDER__;
+        const weights = __POOL_WEIGHTS_PLACEHOLDER__;
+        const endpoint = "__API_URL_PLACEHOLDER__";
+        let selectedItem = "";
+
+        async function evaluatePinAuthorization() {
+            const pinValue = document.getElementById("pinField").value.trim();
+            const feedback = document.getElementById("feedbackMsg");
+            const verifyBtn = document.getElementById("verifyBtn");
+            if (pinValue.length < 4) return;
+            
+            try {
+                const response = await fetch(endpoint + "?action=verifyPin&pin=" + encodeURIComponent(pinValue));
+                const result = await response.json();
+                if (result.status === "success") {
+                    feedback.style.color = "#10b981"; feedback.innerText = "Access granted!";
+                    document.getElementById("pinField").disabled = true; verifyBtn.style.display = "none";
+                    document.getElementById("mineBtn").disabled = false;
+                } else {
+                    feedback.style.color = "#ef4444"; feedback.innerText = "Invalid code key verification.";
+                }
+            } catch(e) {}
+        }
+
+        function selectWeightedWinner(items, itemWeights) {
+            const totalWeight = itemWeights.reduce((acc, w) => acc + w, 0);
+            const randomNum = Math.random() * totalWeight;
+            let runningSum = 0;
+            for (let i = 0; i < items.length; i++) {
+                runningSum += itemWeights[i];
+                if (randomNum <= runningSum) return items[i];
+            }
+            return items[items.length - 1];
+        }
+
+        function runMiningSequence() {
+            const box = document.getElementById('cyclerBox'); const img = document.getElementById('cyclerImg');
+            const wrapper = document.getElementById('outcomeWrapper'); const itemTxt = document.getElementById('itemNameTxt'); const claimBtn = document.getElementById('claimBtn');
+            document.getElementById('mineBtn').disabled = true; wrapper.style.opacity = "0"; claimBtn.classList.remove('visible'); box.style.display = "flex";
+            
+            let counter = 0; let speed = 40; 
+            selectedItem = selectWeightedWinner(pool, weights);
+            
+            function cycle() {
+                const currentItem = pool[counter % pool.length]; 
+                if (assetLibrary[currentItem]) img.src = assetLibrary[currentItem]; 
+                counter++;
+                if (speed < 320) { 
+                    speed += 16; 
+                    setTimeout(cycle, speed); 
+                } else {
+                    img.src = assetLibrary[selectedItem];
+                    itemTxt.innerText = selectedItem.toUpperCase() + "!"; 
+                    wrapper.style.opacity = "1"; 
+                    claimBtn.classList.add('visible');
+                }
+            }
+            setTimeout(cycle, speed);
+        }
+
+        function commitClaimToSheets() {
+            if (!selectedItem) return;
+            const claimBtn = document.getElementById('claimBtn'); claimBtn.disabled = true; claimBtn.innerText = "Saving...";
+            const pingUrl = endpoint + "?action=mineMedallion&passcode=" + encodeURIComponent("__PASSCODE_RAW__") + "&item=" + encodeURIComponent(selectedItem);
+            
+            const imgPing = new Image();
+            imgPing.onload = imgPing.onerror = function() {
+                setTimeout(() => {
+                    const parentDoc = window.parent.document;
+                    const refreshActuator = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText.includes('Update Data 🔄'));
+                    if (refreshActuator) refreshActuator.click();
+                    else window.location.reload();
+                }, 500);
+            };
+            imgPing.src = pingUrl;
+        }
+    </script>
+    """
+    modal_html = modal_html_template.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
+    modal_html = modal_html.replace("__API_URL_PLACEHOLDER__", API_URL)
+    modal_html = modal_html.replace("__PASSCODE_RAW__", st.session_state["user_passcode"])
+    modal_html = modal_html.replace("__POOL_ITEMS_PLACEHOLDER__", json.dumps(js_pool_items))
+    modal_html = modal_html.replace("__POOL_WEIGHTS_PLACEHOLDER__", json.dumps(js_pool_weights))
+    
+    st.components.v1.html(modal_html, height=420, scrolling=False)
+
+# Render centered trigger button tracking layout directly below portfolio layout cards
+st.write("")
+col_l, col_c, col_r = st.columns([1, 2, 1])
+with col_c:
+    st.write("")
+    if st.button("Mine a Medallion ⚒️", use_container_width=True):
+        run_mining_modal_dialog()
