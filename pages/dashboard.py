@@ -48,9 +48,9 @@ def get_image_base64(path):
             return base64.b64encode(image_file.read()).decode()
     return None
 
-# Initialize safe value state trackers to guard against infinite render crashes
-if "processed_sync" not in st.session_state:
-    st.session_state["processed_sync"] = 0
+# Initialize persistent tracker to identify explicit button click keys
+if "last_processed_claim" not in st.session_state:
+    st.session_state["last_processed_claim"] = ""
 
 @st.cache_data(ttl=600)
 def fetch_sheet_records(passcode):
@@ -286,9 +286,9 @@ html_base_template = """
         const imgPing = new Image();
         imgPing.onload = imgPing.onerror = function() {
             setTimeout(() => {
-                // Safely update state without kicking users out or causing recursive loop crashes
                 if (window.parent && window.parent.Streamlit) {
-                    window.parent.Streamlit.setComponentValue(timestamp);
+                    // Send an explicit command format signature to eliminate initialization loop triggers
+                    window.parent.Streamlit.setComponentValue("CLAIMED_" + timestamp);
                 }
             }, 500);
         };
@@ -363,10 +363,12 @@ html_elements = html_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
 html_elements = html_elements.replace("__POOL_ITEMS_PLACEHOLDER__", json.dumps(js_pool_items))
 html_elements = html_elements.replace("__POOL_WEIGHTS_PLACEHOLDER__", json.dumps(js_pool_weights))
 
-# Safely catch incoming signals to prevent feedback infinite reload loops
+# Render component layout
 component_sync_signal = st.components.v1.html(html_elements, height=750, scrolling=False)
 
-if component_sync_signal is not None and component_sync_signal != st.session_state["processed_sync"]:
-    st.session_state["processed_sync"] = component_sync_signal
-    st.cache_data.clear()
-    st.rerun()
+# Validate that the token is a string and explicitly contains our verified prefix token
+if isinstance(component_sync_signal, str) and component_sync_signal.startswith("CLAIMED_"):
+    if component_sync_signal != st.session_state["last_processed_claim"]:
+        st.session_state["last_processed_claim"] = component_sync_signal
+        st.cache_data.clear()
+        st.rerun()
