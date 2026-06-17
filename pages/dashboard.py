@@ -88,21 +88,15 @@ st.markdown("""
     iframe[title="st.components.v1.html"] {
         width: 100% !important;
     }
-    @media (max-width: 768px) {
-        [data-testid="stVerticalBlock"] > div:has(div button[key="sys_refresh_btn"]) {
-            flex-direction: column !important;
-            gap: 12px !important;
-            padding: 0 10px !important;
-        }
-        div.stButton > button[key="sys_refresh_btn"],
-        div.stButton > button[key="sys_route_store_btn"] {
-            width: 100% !important;
-        }
-    }
 </style>
 """, unsafe_allow_html=True)
 
-API_URL = st.secrets["API_URL"]
+# Armored secret parsing protection
+try:
+    API_URL = st.secrets["API_URL"]
+except Exception as e:
+    st.error(f"Configuration Critical Failure: 'API_URL' is missing from secrets.toml setup.")
+    st.stop()
 
 MEDALLION_COLUMNS = [
     "Spruce", "Pine", "Meranti", "Balsa", "Oak", "Maple", 
@@ -143,10 +137,20 @@ def fetch_sheet_records(passcode):
                 m_map = {str(m.get("Medallion", "")).strip().lower(): m for m in d.get("medallions", [])}
                 summary = d.get("master_summary", {})
                 return m_map, summary.get("Inventory", {}), summary.get("CollectionValue", "$0"), summary.get("MedallionsCollected", "0")
-    except: pass
+            else:
+                st.warning(f"API Engine Error Notice: {d.get('message', 'Unknown status failure response.')}")
+        else:
+            st.error(f"HTTP Connection Blocked: Endpoint returned status code {r.status_code}")
+    except Exception as network_error: 
+        st.error(f"Live Sheet Sync Error: {str(network_error)}")
     return {}, {}, "$0", "0"
 
-live_data, live_inventory, summary_value, summary_collected = fetch_sheet_records(st.session_state["user_passcode"])
+# Fetch records using session state safely with fallback assignments
+user_passcode = st.session_state.get("user_passcode", "DEFAULT_DEMO_KEY")
+username_display = st.session_state.get("username", "OPERATOR").upper()
+
+live_data, live_inventory, summary_value, summary_collected = fetch_sheet_records(user_passcode)
+
 if not str(summary_value).strip().startswith("$"):
     summary_value = f"${str(summary_value).strip()}"
 
@@ -253,11 +257,6 @@ html_base_template = """
     }
     @media (max-width: 600px) {
         .casement-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        .portfolio-title { font-size: 18px; }
-        .portfolio-intro { font-size: 11px; margin-bottom: 20px; }
-        .dashboard-row { gap: 10px; }
-        .stat-card { min-width: 0; flex: 1; padding: 10px; }
-        .stat-value { font-size: 15px; }
     }
 </style>
 
@@ -447,8 +446,8 @@ html_elements = html_base_template.replace("__GRID_ITEMS_PLACEHOLDER__", grid_el
 html_elements = html_elements.replace("__VALUE_PLACEHOLDER__", summary_value)
 html_elements = html_elements.replace("__COLLECTED_PLACEHOLDER__", summary_collected)
 html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
-html_elements = html_elements.replace("__USERNAME_UPPER__", st.session_state["username"].upper())
-html_elements = html_elements.replace("__PASSCODE_RAW__", st.session_state["user_passcode"])
+html_elements = html_elements.replace("__USERNAME_UPPER__", username_display)
+html_elements = html_elements.replace("__PASSCODE_RAW__", user_passcode)
 html_elements = html_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
 html_elements = html_elements.replace("__POOL_ITEMS_PLACEHOLDER__", json.dumps(js_pool_items))
 html_elements = html_elements.replace("__POOL_WEIGHTS_PLACEHOLDER__", json.dumps(js_pool_weights))
