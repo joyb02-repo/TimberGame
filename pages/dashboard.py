@@ -186,9 +186,7 @@ html_base_template = """
     .mine-button { width: 424px; height: 46px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }
     .mine-button:disabled { opacity: 0.35; cursor: not-allowed; background-color: #161925 !important; color: #3D4563 !important; border: 1px solid #23273A; box-shadow: none !important; }
 
-    /* 🎴 COMPACT OVERLAY DIALOG SYSTEM
-       Changed align-items to flex-start and added padding-top to shift the box upwards on the layout screen.
-    */
+    /* 🎴 COMPACT OVERLAY DIALOG SYSTEM */
     .modal-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(14, 17, 23, 0.85); backdrop-filter: blur(4px);
@@ -200,6 +198,10 @@ html_base_template = """
         width: 320px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.7);
         display: flex; flex-direction: column; align-items: center; text-align: center;
         position: relative;
+    }
+    .modal-subheading {
+        font-size: 13px; font-weight: 500; color: rgba(255, 255, 255, 0.6);
+        letter-spacing: 0.5px; margin-bottom: 16px; text-transform: none;
     }
     .spin-box { width: 140px; height: 140px; border-radius: 12px; background: #161925; border: 3px solid #23273A; display: flex; align-items: center; justify-content: center; }
     .spin-box img { width: 88%; height: 88%; object-fit: contain; }
@@ -237,6 +239,7 @@ html_base_template = """
 
 <div class="modal-overlay" id="miningModal">
     <div class="modal-box">
+        <div class="modal-subheading">Medallion Mining in Process...</div>
         <div class="spin-box" id="cyclerBox"><img id="cyclerImg" src="" /></div>
         <div class="outcome-text-wrapper" id="outcomeWrapper">
             <div style="font-size:11px; color:#718096; text-transform:uppercase; letter-spacing:1px;">Successfully Mined:</div>
