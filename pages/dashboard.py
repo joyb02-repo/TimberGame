@@ -22,6 +22,20 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# NATIVE TOP HEADER ROW WITH LOGOUT ACTUATOR RESTORED
+col_title, col_logout = st.columns([9, 1.2])
+with col_title:
+    st.markdown(f"<h2 style='margin:0; font-weight:600;'>Timber Medallion Portfolio: <span style='color:#F4D068;'>{st.session_state['username'].upper()}</span></h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color:rgba(255,255,255,0.3); margin-top:4px;'>Master tracking dashboard powered directly by cloud inventory records.</p>", unsafe_allow_html=True)
+with col_logout:
+    if st.button("🔓 LOGOUT", use_container_width=True):
+        st.session_state["authenticated"] = False
+        st.session_state["user_passcode"] = ""
+        st.session_state["username"] = "Guest"
+        st.switch_page("login.py")
+
+st.markdown("---")
+
 def get_image_base64(path):
     if os.path.exists(path):
         with open(path, "rb") as image_file:
