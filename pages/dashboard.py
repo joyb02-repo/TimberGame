@@ -14,23 +14,13 @@ API_URL = st.secrets["API_URL"]
 MEDALLION_COLUMNS = ["Spruce", "Pine", "Meranti", "Balsa", "Oak", "Maple", "Walnut", "Cherry", "Mahogany", "Ebony", "Rosewood", "Agarwood"]
 LABEL_MAPPING = {"Spruce": "SPRC", "Pine": "PINE", "Meranti": "MRNT", "Balsa": "BALS", "Oak": "OAKW", "Maple": "MAPL", "Walnut": "WALN", "Cherry": "CHER", "Mahogany": "MHGN", "Ebony": "EBNY", "Rosewood": "RSWD", "Agarwood": "AGAR"}
 
-# Custom layout and hidden system parameters
+# Custom layout and styling rules
 st.markdown("""
 <style>
     .stApp { background-color: #0E1117; color: white; }
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; }
-    
-    /* Hide the silent iframe data transfer bridge text input element */
-    div.element-container:has(input[aria-label="system_sink"]) { display: none !important; height: 0px !important; }
 </style>
 """, unsafe_allow_html=True)
-
-# Invisible system parameters bridge used to listen to iframe claims
-claim_catch = st.text_input("system_sink", key="system_sink", label_visibility="collapsed")
-if claim_catch and claim_catch.startswith("CLAIM:"):
-    st.cache_data.clear()  # Drop cached reports forcing immediate spreadsheet reload 
-    st.session_state["system_sink"] = ""
-    st.rerun()
 
 def get_image_base64(path):
     if os.path.exists(path):
@@ -172,23 +162,30 @@ html_base_template = """
         setTimeout(cycle, speed);
     }
 
-    function commitClaimToSheets() {
-        const claimBtn = document.getElementById('claimBtn'); claimBtn.disabled = true; claimBtn.innerText = "Saving...";
+    // ⚡ CHATGPT SECURE FETCH & REFRESH ENGINE RECONCILIATION
+    async function commitClaimToSheets() {
+        if (!selectedItem) return;
+        const claimBtn = document.getElementById('claimBtn'); 
+        claimBtn.disabled = true; 
+        claimBtn.innerText = "Saving...";
+        
         const pingUrl = endpoint + "?action=mineMedallion&passcode=" + encodeURIComponent("__PASSCODE_RAW__") + "&item=" + encodeURIComponent(selectedItem);
         
-        const imgPing = new Image();
-        imgPing.onload = imgPing.onerror = function() {
-            try {
-                const targetInput = window.parent.document.querySelector('input[aria-label="system_sink"]');
-                if (targetInput) {
-                    targetInput.value = "CLAIM:" + selectedItem;
-                    targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    return;
-                }
-            } catch(e) { }
+        try {
+            const response = await fetch(pingUrl);
+            const result = await response.json();
+            
+            // If the sheet successfully writes, force top window context to refresh instantly
+            if (result.status === "success" || result.status === "ok") {
+                window.top.location.reload();
+            } else {
+                claimBtn.innerText = "Error Saving";
+                claimBtn.disabled = false;
+            }
+        } catch (err) {
+            // Backup fallback: if response format throws a JSON parse error but request succeeded
             window.top.location.reload();
-        };
-        imgPing.src = pingUrl;
+        }
     }
 </script>
 """
