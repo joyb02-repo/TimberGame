@@ -1,6 +1,6 @@
 # ====================================================================
 # PROJECT: TIMBER MEDALLION PORTFOLIO SYSTEM
-# FILE: pages/dashboard.py (CLEAN NATIVE EMBEDDED MODAL ENGINE)
+# FILE: pages/dashboard.py (MOBILE RESPONSIVE MODAL ENGINE)
 # ====================================================================
 
 import streamlit as st
@@ -84,6 +84,18 @@ st.markdown("""
         background: linear-gradient(135deg, #34D399 0%, #10B981 100%) !important;
         box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4) !important;
     }
+
+    /* Mobile Responsive adjustments for native top buttons */
+    @media (max-width: 768px) {
+        [data-testid="stVerticalBlock"] > div:has(div button[key="sys_refresh_btn"]) {
+            flex-direction: column !important;
+            gap: 10px !important;
+        }
+        div.stButton > button[key="sys_refresh_btn"], 
+        div.stButton > button[key="sys_route_store_btn"] {
+            width: 100% !important;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -160,13 +172,14 @@ for wood_name in MEDALLION_COLUMNS:
 html_base_template = """
 <style>
     body { margin: 0; padding: 0; background: transparent; font-family: 'Inter', sans-serif; color: #FFFFFF; }
-    .header-wrapper { width: 100%; text-align: center; margin-bottom: 25px; box-sizing: border-box; }
+    .header-wrapper { width: 100%; text-align: center; margin-bottom: 25px; box-sizing: border-box; padding: 0 10px; }
     
     .portfolio-title { font-size: 26px; font-weight: 700; color: #FFFFFF; margin-bottom: 10px; letter-spacing: -0.5px; }
     .portfolio-title span.user-accent { color: #F4D068; }
     .portfolio-intro { max-width: 850px; margin: 0 auto; font-size: 13.5px; line-height: 1.6; color: rgba(255, 255, 255, 0.4); }
     .portfolio-intro span { color: rgba(244, 208, 104, 0.9); font-weight: 600; }
     
+    /* 🎴 FLEXIBLE GRID MATRIX */
     .casement-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; margin-bottom: 30px; width: 100%; box-sizing: border-box; }
     .grid-node { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
     .image-frame { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
@@ -192,18 +205,18 @@ html_base_template = """
     .tip-line span.rarity-epic { color: #a855f7; }         
     .tip-line span.rarity-legendary { color: #f59e0b; }    
     
-    .dashboard-row { display: flex; justify-content: center; gap: 20px; margin-bottom: 35px; }
-    .stat-card { background: #161925; border: 1px solid #23273A; border-radius: 6px; padding: 12px 24px; min-width: 190px; text-align: center; }
+    .dashboard-row { display: flex; justify-content: center; gap: 20px; margin-bottom: 35px; padding: 0 10px; }
+    .stat-card { background: #161925; border: 1px solid #23273A; border-radius: 6px; padding: 12px 24px; min-width: 190px; text-align: center; flex: 1; max-width: 240px; }
     .stat-label { font-size: 11px; text-transform: uppercase; color: #718096; margin-bottom: 4px; letter-spacing: 0.5px; }
     .stat-value { font-size: 20px; font-weight: 700; color: #F4D068; }
     
-    .action-container { display: flex; flex-direction: column; align-items: center; width: 100%; }
-    .pin-auth-wrapper { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
-    .pin-input { width: 160px; height: 40px; background: #161925; border: 1px solid #23273A; border-radius: 6px; color: #FFF; text-align: center; font-size: 14px; font-weight: 600; outline: none; }
+    .action-container { display: flex; flex-direction: column; align-items: center; width: 100%; padding: 0 10px; box-sizing: border-box; }
+    .pin-auth-wrapper { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; width: 100%; max-width: 424px; }
+    .pin-input { width: 160px; height: 40px; background: #161925; border: 1px solid #23273A; border-radius: 6px; color: #FFF; text-align: center; font-size: 14px; font-weight: 600; outline: none; flex-grow: 1; }
     .pin-verify-btn { padding: 0 20px; height: 40px; background: #23273A; border: none; border-radius: 6px; color: #E2E8F0; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
     .pin-feedback-msg { font-size: 11px; font-weight: 600; margin-bottom: 10px; height: 14px; }
     
-    .mine-button { width: 424px; height: 48px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }
+    .mine-button { width: 424px; max-width: 100%; height: 48px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }
     .mine-button:disabled { opacity: 0.35; cursor: not-allowed; background-color: #161925 !important; color: #3D4563 !important; border: 1px solid #23273A; box-shadow: none !important; }
 
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(14, 17, 23, 0.85); backdrop-filter: blur(4px); display: none; align-items: flex-start; justify-content: center; z-index: 999999; padding-top: 60px; }
@@ -215,6 +228,27 @@ html_base_template = """
     .outcome-bottom { font-size: 18px; font-weight: 800; color: #F4D068; }
     .claim-button { margin-top: 14px; width: 160px; height: 32px; background-color: transparent; border: 2px solid #F4D068; border-radius: 4px; color: #F4D068; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; opacity: 0; transform: translateY(5px); }
     .claim-button.visible { opacity: 1 !important; transform: translateY(0) !important; }
+
+    /* 📱 ADAPTIVE MOBILE ENGINE (Triggered when screen width is under 768px) */
+    @media (max-width: 768px) {
+        .portfolio-title { font-size: 5.5vw; }
+        .portfolio-intro { font-size: 12px; line-height: 1.5; text-align: justify; }
+        
+        /* 🛠️ Forces exactly 4 medallions wide per row (3 total rows for 12 items) */
+        .casement-grid { grid-template-columns: repeat(4, 1fr); gap: 10px 6px; }
+        .image-frame { width: 50px; height: 50px; }
+        .lock-node { width: 44px; height: 44px; font-size: 10px; }
+        .quantity-badge { font-size: 11px; }
+        .label-badge { font-size: 9px; }
+
+        .dashboard-row { gap: 10px; margin-bottom: 25px; }
+        .stat-card { min-width: 0; padding: 10px; }
+        .stat-value { font-size: 16px; }
+        
+        /* Flips tooltip placement for edge items on mobile interfaces */
+        .grid-node:nth-child(4n) .node-tooltip { left: auto; right: 0; transform: translateX(0); }
+        .grid-node:nth-child(4n+1) .node-tooltip { left: 0; transform: translateX(0); }
+    }
 </style>
 
 <div class="header-wrapper">
@@ -403,5 +437,5 @@ html_elements = html_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
 html_elements = html_elements.replace("__POOL_ITEMS_PLACEHOLDER__", json.dumps(js_pool_items))
 html_elements = html_elements.replace("__POOL_WEIGHTS_PLACEHOLDER__", json.dumps(js_pool_weights))
 
-# 🛠️ Re-introduced clear display constraints for Streamlit to prevent 0px collapses
-st.components.v1.html(html_elements, height=750, scrolling=True)
+# Boosted standard baseline height to 920px to comfortably support vertical multi-row breaks on mobile views
+st.components.v1.html(html_elements, height=920, scrolling=True)
