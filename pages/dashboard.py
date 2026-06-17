@@ -2,7 +2,6 @@ import streamlit as st
 import requests
 import os
 import base64
-import json
 
 # Strict page routing check
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
@@ -15,30 +14,16 @@ API_URL = st.secrets["API_URL"]
 MEDALLION_COLUMNS = ["Spruce", "Pine", "Meranti", "Balsa", "Oak", "Maple", "Walnut", "Cherry", "Mahogany", "Ebony", "Rosewood", "Agarwood"]
 LABEL_MAPPING = {"Spruce": "SPRC", "Pine": "PINE", "Meranti": "MRNT", "Balsa": "BALS", "Oak": "OAKW", "Maple": "MAPL", "Walnut": "WALN", "Cherry": "CHER", "Mahogany": "MHGN", "Ebony": "EBNY", "Rosewood": "RSWD", "Agarwood": "AGAR"}
 
-# Custom layout and styling rules
+# Custom layout and hidden system parameters
 st.markdown("""
 <style>
     .stApp { background-color: #0E1117; color: white; }
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; }
+    
+    /* Hide the silent iframe data transfer bridge text input element */
+    div.element-container:has(input[aria-label="system_sink"]) { display: none !important; height: 0px !important; }
 </style>
 """, unsafe_allow_html=True)
-
-# 🔒 NATIVE BACKEND TRANSACTION LAYER
-# If an item parameter exists in the URL string, process the claim inside Python safely
-query_params = st.query_params
-if "claim_item" in query_params:
-    mined_item = query_params["claim_item"]
-    passcode_raw = st.session_state.get("user_passcode", "")
-    
-    # Python issues the live secure update directly from backend server-side context
-    try:
-        requests.get(API_URL, params={"action": "mineMedallion", "passcode": passcode_raw, "item": mined_item}, timeout=15)
-    except:
-        pass
-        
-    st.cache_data.clear()      # Instantly destroy cache entries to pull clean sheet figures
-    st.query_params.clear()    # Strip variables from the address bar to avoid looped execution
-    st.rerun()
 
 # NATIVE TOP HEADER ROW WITH LOGOUT ACTUATOR
 col_title, col_logout = st.columns([9, 1.2])
@@ -54,13 +39,20 @@ with col_logout:
 
 st.markdown("---")
 
+# Invisible system parameters bridge used to listen to iframe claims
+claim_catch = st.text_input("system_sink", key="system_sink", label_visibility="collapsed")
+if claim_catch and claim_catch.startswith("CLAIM:"):
+    st.cache_data.clear()  # Drop cached reports forcing immediate spreadsheet reload 
+    st.session_state["system_sink"] = ""
+    st.rerun()
+
 def get_image_base64(path):
     if os.path.exists(path):
         with open(path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode()
     return None
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=5)
 def fetch_portfolio_data(passcode):
     try:
         response = requests.get(API_URL, params={"action": "fetchData", "passcode": passcode}, timeout=15)
@@ -84,23 +76,9 @@ for wood in MEDALLION_COLUMNS:
     if b64: asset_map_js += f"'{wood}': 'data:image/png;base64,{b64}',"
 asset_map_js += "}"
 
-# Compute weighted arrays based on Google Sheets setup
-js_pool_items = []
-js_pool_weights = []
-for wood_name in MEDALLION_COLUMNS:
-    lookup_key = wood_name.strip().lower()
-    sheet_row = live_data.get(lookup_key, None)
-    weight_value = 1.0
-    if sheet_row and "Probability" in sheet_row:
-        prob_str = str(sheet_row["Probability"]).replace("%", "").strip()
-        try: weight_value = float(prob_str)
-        except ValueError: weight_value = 1.0
-    js_pool_items.append(wood_name)
-    js_pool_weights.append(weight_value)
-
 html_base_template = """
 <style>
-    body { margin: 0; padding: 0; background: transparent; font-family: 'Inter', system-ui, sans-serif; position: relative; }
+    body { margin: 0; padding: 0; background: transparent; font-family: 'Inter', system-ui, sans-serif; }
     .casement-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; margin-bottom: 30px; }
     .grid-node { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
     .image-frame { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
@@ -132,31 +110,14 @@ html_base_template = """
     
     .mine-button { width: 424px; height: 46px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }
     .mine-button:disabled { opacity: 0.35; cursor: not-allowed; background-color: #161925 !important; color: #3D4563 !important; border: 1px solid #23273A; box-shadow: none !important; }
-
-    /* 🎴 POPUP OVERLAY LAYOUT ENGAGEMENT STYLE */
-    .modal-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(14, 17, 23, 0.85); backdrop-filter: blur(4px);
-        display: none; align-items: flex-start; justify-content: center; z-index: 999999;
-        padding-top: 60px; box-sizing: border-box;
-    }
-    .modal-box {
-        background: #0E1117; border: 1px solid #23273A; border-radius: 12px;
-        width: 320px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.7);
-        display: flex; flex-direction: column; align-items: center; text-align: center;
-        position: relative;
-    }
-    .modal-subheading {
-        font-size: 13px; font-weight: 500; color: rgba(255, 255, 255, 0.6);
-        letter-spacing: 0.5px; margin-bottom: 16px;
-    }
-    .spin-box { width: 140px; height: 140px; border-radius: 12px; background: #161925; border: 3px solid #23273A; display: flex; align-items: center; justify-content: center; }
-    .spin-box img { width: 88%; height: 88%; object-fit: contain; }
-    .outcome-text-wrapper { margin-top: 15px; height: 35px; text-align: center; opacity: 0; transition: opacity 0.2s ease; }
-    .outcome-bottom { font-size: 18px; font-weight: 800; color: #F4D068; }
     
-    .claim-button { margin-top: 14px; width: 160px; height: 32px; background-color: transparent; border: 2px solid #F4D068; border-radius: 4px; color: #F4D068; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; opacity: 0; transform: translateY(5px); transition: all 0.2s; display: inline-block; }
-    .claim-button.visible { opacity: 1 !important; transform: translateY(0) !important; }
+    .animation-display { margin-top: 20px; height: 240px; display: flex; flex-direction: column; align-items: center; }
+    .spin-box { width: 140px; height: 140px; border-radius: 12px; background: #161925; border: 3px solid #23273A; display: none; align-items: center; justify-content: center; }
+    .spin-box img { width: 88%; height: 88%; object-fit: contain; }
+    .outcome-text-wrapper { margin-top: 15px; height: 35px; text-align: center; opacity: 0; }
+    .outcome-bottom { font-size: 18px; font-weight: 800; color: #F4D068; }
+    .claim-button { width: 160px; height: 32px; background-color: transparent; border: 2px solid #F4D068; border-radius: 4px; color: #F4D068; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; opacity: 0; transform: translateY(5px); transition: all 0.2s; }
+    .claim-button.visible { opacity: 1; transform: translateY(0); }
     .claim-button:hover { background-color: #F4D068; color: #0E1117; }
 </style>
 
@@ -173,15 +134,12 @@ html_base_template = """
         <button class="pin-verify-btn" id="verifyBtn" onclick="evaluatePinAuthorization()">Verify PIN</button>
     </div>
     <div class="pin-feedback-msg" id="feedbackMsg" style="color: #718096;"></div>
-    <button class="mine-button" id="mineBtn" disabled onclick="openMiningModal()">Mine a Medallion</button>
-</div>
-
-<div class="modal-overlay" id="miningModal">
-    <div class="modal-box">
-        <div class="modal-subheading">Medallion Mining Running...</div>
+    <button class="mine-button" id="mineBtn" disabled onclick="runMiningSequence()">Mine a Medallion</button>
+    
+    <div class="animation-display">
         <div class="spin-box" id="cyclerBox"><img id="cyclerImg" src="" /></div>
         <div class="outcome-text-wrapper" id="outcomeWrapper">
-            <div style="font-size:11px; color:#718096; text-transform:uppercase; letter-spacing:1px;">Successfully Mined:</div>
+            <div style="font-size:11px; color:#718096;">SUCCESSFULLY MINED:</div>
             <div class="outcome-bottom" id="itemNameTxt"></div>
         </div>
         <button class="claim-button" id="claimBtn" onclick="commitClaimToSheets()">Claim Medallion</button>
@@ -190,8 +148,7 @@ html_base_template = """
 
 <script>
     const assetLibrary = __ASSET_MAP_PLACEHOLDER__;
-    const pool = __POOL_ITEMS_PLACEHOLDER__;
-    const weights = __POOL_WEIGHTS_PLACEHOLDER__;
+    const pool = ['Spruce', 'Pine', 'Meranti', 'Balsa', 'Oak', 'Maple', 'Walnut', 'Cherry', 'Mahogany', 'Ebony', 'Rosewood', 'Agarwood'];
     const endpoint = "__API_URL_PLACEHOLDER__";
     let selectedItem = "";
 
@@ -214,61 +171,42 @@ html_base_template = """
         } catch(e) { }
     }
 
-    function selectWeightedWinner(items, itemWeights) {
-        const totalWeight = itemWeights.reduce((acc, w) => acc + w, 0);
-        const randomNum = Math.random() * totalWeight;
-        let runningSum = 0;
-        for (let i = 0; i < items.length; i++) {
-            runningSum += itemWeights[i];
-            if (randomNum <= runningSum) return items[i];
-        }
-        return items[items.length - 1];
-    }
-
-    function openMiningModal() {
-        document.getElementById("miningModal").style.display = "flex";
-        runMiningSequence();
-    }
-
     function runMiningSequence() {
-        const img = document.getElementById('cyclerImg');
-        const wrapper = document.getElementById('outcomeWrapper'); 
-        const itemTxt = document.getElementById('itemNameTxt'); 
-        const claimBtn = document.getElementById('claimBtn');
-        
-        wrapper.style.opacity = "0"; 
-        claimBtn.classList.remove('visible');
-        
-        let counter = 0; let speed = 40; 
-        selectedItem = selectWeightedWinner(pool, weights);
-        
+        const box = document.getElementById('cyclerBox'); const img = document.getElementById('cyclerImg');
+        const wrapper = document.getElementById('outcomeWrapper'); const itemTxt = document.getElementById('itemNameTxt'); const claimBtn = document.getElementById('claimBtn');
+        document.getElementById('mineBtn').disabled = true; wrapper.style.opacity = "0"; claimBtn.classList.remove('visible'); box.style.display = "flex";
+        let counter = 0; let speed = 40; selectedItem = pool[Math.floor(Math.random() * pool.length)];
         function cycle() {
-            const currentItem = pool[counter % pool.length]; 
-            if (assetLibrary[currentItem]) img.src = assetLibrary[currentItem]; 
-            counter++;
-            if (speed < 320) { 
-                speed += 16; 
-                setTimeout(cycle, speed); 
-            } else {
+            const currentItem = pool[counter % pool.length]; if (assetLibrary[currentItem]) img.src = assetLibrary[currentItem]; counter++;
+            if (speed < 320) { speed += 16; setTimeout(cycle, speed); } else {
                 img.src = assetLibrary[selectedItem];
-                itemTxt.innerText = selectedItem.toUpperCase() + "!"; 
-                wrapper.style.opacity = "1"; 
-                claimBtn.classList.add('visible');
+                itemTxt.innerText = selectedItem.toUpperCase() + "!"; wrapper.style.opacity = "1"; claimBtn.classList.add('visible');
             }
         }
         setTimeout(cycle, speed);
     }
 
-    // 🔒 CRASH-PROOF TRANSACT SYSTEM
     function commitClaimToSheets() {
-        if (!selectedItem) return;
-        const claimBtn = document.getElementById('claimBtn'); 
-        claimBtn.disabled = true; 
-        claimBtn.innerText = "Saving...";
+        const claimBtn = document.getElementById('claimBtn'); claimBtn.disabled = true; claimBtn.innerText = "Saving...";
+        const pingUrl = endpoint + "?action=mineMedallion&passcode=" + encodeURIComponent("__PASSCODE_RAW__") + "&item=" + encodeURIComponent(selectedItem);
         
-        // Pass the chosen variant safely out to top-level window context via search query.
-        // This bypasses CORS locks completely and wakes up Python natively.
-        window.parent.location.search = "?claim_item=" + encodeURIComponent(selectedItem);
+        const imgPing = new Image();
+        imgPing.onload = imgPing.onerror = function() {
+            // Secure, native cross-origin framework reload sequence
+            try {
+                const targetInput = window.parent.document.querySelector('input[aria-label="system_sink"]');
+                if (targetInput) {
+                    targetInput.value = "CLAIM:" + selectedItem;
+                    targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    return;
+                }
+            } catch(e) {
+                // Fail-safe path: If browser strictly blocks window.parent due to host domain configs, 
+                // we break out via top-level location change which works flawlessly across all sandbox types.
+                window.top.location.reload();
+            }
+        };
+        imgPing.src = pingUrl;
     }
 </script>
 """
@@ -310,8 +248,7 @@ html_elements = html_base_template.replace("__GRID_ITEMS_PLACEHOLDER__", grid_el
 html_elements = html_elements.replace("__VALUE_PLACEHOLDER__", summary_value)
 html_elements = html_elements.replace("__COLLECTED_PLACEHOLDER__", summary_collected)
 html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
+html_elements = html_elements.replace("__PASSCODE_RAW__", st.session_state["user_passcode"])
 html_elements = html_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
-html_elements = html_elements.replace("__POOL_ITEMS_PLACEHOLDER__", json.dumps(js_pool_items))
-html_elements = html_elements.replace("__POOL_WEIGHTS_PLACEHOLDER__", json.dumps(js_pool_weights))
 
-st.components.v1.html(html_elements, height=620, scrolling=False)
+st.components.v1.html(html_elements, height=560, scrolling=False)
