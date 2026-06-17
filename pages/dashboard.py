@@ -83,22 +83,6 @@ st.markdown("""
         background: linear-gradient(135deg, #34D399 0%, #10B981 100%) !important;
         box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4) !important;
     }
-
-    /* Streamlit iframe containment optimizations for mobile responsiveness */
-    iframe[title="st.components.v1.html"] {
-        width: 100% !important;
-    }
-    @media (max-width: 768px) {
-        [data-testid="stVerticalBlock"] > div:has(div button[key="sys_refresh_btn"]) {
-            flex-direction: column !important;
-            gap: 10px !important;
-            padding: 0 10px !important;
-        }
-        div.stButton > button[key="sys_refresh_btn"],
-        div.stButton > button[key="sys_route_store_btn"] {
-            width: 100% !important;
-        }
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -171,7 +155,7 @@ for wood_name in MEDALLION_COLUMNS:
 
 html_base_template = """
 <style>
-    body { margin: 0; padding: 10px 0 0 0; background: transparent; font-family: 'Inter', sans-serif; position: relative; overflow-x: hidden; }
+    body { margin: 0; padding: 10px 0 0 0; background: transparent; font-family: 'Inter', sans-serif; position: relative; }
     .header-wrapper { position: relative; max-width: 100%; margin: 0 auto; padding: 0 15px; text-align: center; }
     
     .portfolio-title { font-size: 24px; font-weight: 600; color: #FFFFFF; margin-bottom: 8px; }
@@ -188,7 +172,7 @@ html_base_template = """
     .quantity-badge { font-size: 12px; font-weight: 700; color: #F4D068; margin-bottom: 3px; min-height: 15px; }
     .label-badge { font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    /* 🛠️ HOVER TEXT STRUCTURAL SYSTEM */
+    /* 🛠️ HOVER TEXT STRUCTURAL SYSTEM (REVERTED TO PREVIOUS WORKING VERSION) */
     .node-tooltip { 
         visibility: hidden; opacity: 0; position: absolute; top: -115px; left: 50%; 
         transform: translateX(-50%); width: 150px; background: #161925; border: 1px solid #282E48; 
@@ -212,13 +196,13 @@ html_base_template = """
     .stat-label { font-size: 11px; text-transform: uppercase; color: #718096; margin-bottom: 4px; }
     .stat-value { font-size: 18px; font-weight: 700; color: #F4D068; }
     
-    .action-container { display: flex; flex-direction: column; align-items: center; margin-top: 25px; width: 100%; box-sizing: border-box; padding: 0 15px; }
-    .pin-auth-wrapper { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; width: 100%; max-width: 424px; }
-    .pin-input { width: 150px; height: 38px; background: #161925; border: 1px solid #23273A; border-radius: 6px; color: #FFF; text-align: center; font-size: 14px; font-weight: 600; outline: none; flex-grow: 1; }
-    .pin-verify-btn { padding: 0 16px; height: 38px; background: #23273A; border: none; border-radius: 6px; color: #E2E8F0; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+    .action-container { display: flex; flex-direction: column; align-items: center; margin-top: 25px; width: 100%; }
+    .pin-auth-wrapper { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+    .pin-input { width: 150px; height: 38px; background: #161925; border: 1px solid #23273A; border-radius: 6px; color: #FFF; text-align: center; font-size: 14px; font-weight: 600; outline: none; }
+    .pin-verify-btn { padding: 0 16px; height: 38px; background: #23273A; border: none; border-radius: 6px; color: #E2E8F0; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
     .pin-feedback-msg { font-size: 11px; font-weight: 600; margin-bottom: 10px; height: 14px; }
     
-    .mine-button { width: 424px; max-width: 100%; height: 46px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }
+    .mine-button { width: 424px; height: 46px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }
     .mine-button:disabled { opacity: 0.35; cursor: not-allowed; background-color: #161925 !important; color: #3D4563 !important; border: 1px solid #23273A; box-shadow: none !important; }
 
     /* 🎴 COMPACT OVERLAY DIALOG SYSTEM */
@@ -246,20 +230,6 @@ html_base_template = """
     .claim-button { margin-top: 14px; width: 160px; height: 32px; background-color: transparent; border: 2px solid #F4D068; border-radius: 4px; color: #F4D068; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; opacity: 0; transform: translateY(5px); transition: all 0.2s; display: inline-block; }
     .claim-button.visible { opacity: 1 !important; transform: translateY(0) !important; }
     .claim-button:hover { background-color: #F4D068; color: #0E1117; }
-
-    /* 📱 MOBILE RESPONSIVE ENGINE DESIGN PIPELINE */
-    .mobile-dropdown-container { display: none; width: 100%; max-width: 424px; padding: 0 15px; margin: 15px auto 25px auto; box-sizing: border-box; }
-    .mobile-select-menu { width: 100%; height: 44px; background: #161925; border: 1px solid #23273A; border-radius: 6px; color: #FFF; padding: 0 12px; font-size: 13px; font-weight: 600; outline: none; cursor: pointer; }
-
-    @media (max-width: 768px) {
-        .casement-grid { display: none !important; }
-        .mobile-dropdown-container { display: block !important; }
-        .portfolio-title { font-size: 20px; }
-        .portfolio-intro { font-size: 12px; padding: 0 10px; margin-bottom: 20px; }
-        .dashboard-row { flex-direction: row; gap: 10px; width: 100%; max-width: 424px; margin: 15px auto; box-sizing: border-box; }
-        .stat-card { min-width: 0 !important; flex: 1; padding: 10px 5px; }
-        .stat-value { font-size: 15px; }
-    }
 </style>
 
 <div class="header-wrapper">
@@ -270,13 +240,6 @@ html_base_template = """
 </div>
 
 <div class="casement-grid">__GRID_ITEMS_PLACEHOLDER__</div>
-
-<div class="mobile-dropdown-container">
-    <select class="mobile-select-menu" onchange="if(this.value) alert(this.value)">
-        <option value="">▼ VIEW MEDALLION COLLECTION DETAILS</option>
-        __DROPDOWN_ITEMS_PLACEHOLDER__
-    </select>
-</div>
 
 <div class="dashboard-row">
     <div class="stat-card"><div class="stat-label">Collection Value</div><div class="stat-value">__VALUE_PLACEHOLDER__</div></div>
@@ -396,8 +359,6 @@ html_base_template = """
 """
 
 grid_elements_html = ""
-dropdown_elements_html = ""
-
 for wood_name in MEDALLION_COLUMNS:
     display_label = LABEL_MAPPING.get(wood_name, wood_name[:4].upper())
     lookup_key = wood_name.strip().lower()
@@ -453,16 +414,7 @@ for wood_name in MEDALLION_COLUMNS:
     </div>
     """
 
-    # Extract clean text rows for the mobile native text popup
-    lock_label_status = f" [Owned: x{owned}]" if owned > 0 else " [🔒 Locked]"
-    dropdown_elements_html += f"""
-    <option value="{wood_name} ({display_label})&#10;Rarity: {rarity}&#10;Value: {value}&#10;Left: {availability}&#10;Chance: {probability}">
-        {wood_name} ({display_label}){lock_label_status}
-    </option>
-    """
-
 html_elements = html_base_template.replace("__GRID_ITEMS_PLACEHOLDER__", grid_elements_html)
-html_elements = html_elements.replace("__DROPDOWN_ITEMS_PLACEHOLDER__", dropdown_elements_html)
 html_elements = html_elements.replace("__VALUE_PLACEHOLDER__", summary_value)
 html_elements = html_elements.replace("__COLLECTED_PLACEHOLDER__", summary_collected)
 html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
