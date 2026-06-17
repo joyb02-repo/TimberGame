@@ -172,24 +172,6 @@ html_base_template = """
     .quantity-badge { font-size: 12px; font-weight: 700; color: #F4D068; margin-bottom: 3px; min-height: 15px; }
     .label-badge { font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    .node-tooltip { 
-        visibility: hidden; opacity: 0; position: absolute; top: -120px; left: 50%; 
-        transform: translateX(-50%); width: 180px; background: #161925; border: 1px solid #282E48; 
-        border-radius: 8px; padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); 
-        z-index: 9999999 !important; transition: opacity 0.12s ease-in-out; pointer-events: none; 
-    }
-    .grid-node:hover .node-tooltip { visibility: visible; opacity: 1; }
-    .grid-node:first-child .node-tooltip { left: 0; transform: translateX(0); }
-    .grid-node:last-child .node-tooltip { left: auto; right: 0; transform: translateX(0); }
-    
-    .tip-line { font-size: 11px; color: #E2E8F0; margin-bottom: 5px; text-align: left; white-space: nowrap; }
-    .tip-line span { font-weight: 700; color: #F4D068; }
-    .tip-line span.rarity-common { color: #CD7F32; }       
-    .tip-line span.rarity-uncommon { color: #C0C0C0; }     
-    .tip-line span.rarity-rare { color: #3b82f6; }         
-    .tip-line span.rarity-epic { color: #a855f7; }         
-    .tip-line span.rarity-legendary { color: #f59e0b; }    
-    
     .dashboard-row { display: flex; justify-content: center; gap: 20px; margin-top: 30px; padding: 0 15px; }
     .stat-card { background: #161925; border: 1px solid #23273A; border-radius: 6px; padding: 10px 20px; min-width: 180px; text-align: center; }
     .stat-label { font-size: 11px; text-transform: uppercase; color: #718096; margin-bottom: 4px; }
@@ -204,13 +186,14 @@ html_base_template = """
     .mine-button { width: 424px; height: 46px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }
     .mine-button:disabled { opacity: 0.35; cursor: not-allowed; background-color: #161925 !important; color: #3D4563 !important; border: 1px solid #23273A; box-shadow: none !important; }
 
-    /* 🎴 COMPACT OVERLAY DIALOG SYSTEM (SANDBOX INTEGRATED)
-       Fits completely inside the standard page view without creating extra iframe layers.
+    /* 🎴 COMPACT OVERLAY DIALOG SYSTEM
+       Changed align-items to flex-start and added padding-top to shift the box upwards on the layout screen.
     */
     .modal-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(14, 17, 23, 0.85); backdrop-filter: blur(4px);
-        display: none; align-items: center; justify-content: center; z-index: 999999;
+        display: none; align-items: flex-start; justify-content: center; z-index: 999999;
+        padding-top: 60px; box-sizing: border-box;
     }
     .modal-box {
         background: #0E1117; border: 1px solid #23273A; border-radius: 12px;
@@ -301,7 +284,6 @@ html_base_template = """
     }
 
     function openMiningModal() {
-        // Display the overlay popup natively
         document.getElementById("miningModal").style.display = "flex";
         runMiningSequence();
     }
@@ -343,7 +325,6 @@ html_base_template = """
         const imgPing = new Image();
         imgPing.onload = imgPing.onerror = function() {
             setTimeout(() => {
-                // Triggers parent update safely without structural hack layers
                 const parentDoc = window.parent.document;
                 const refreshActuator = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText.includes('Update Data 🔄'));
                 if (refreshActuator) refreshActuator.click();
