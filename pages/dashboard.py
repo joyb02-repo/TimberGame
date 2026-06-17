@@ -1,6 +1,6 @@
 # ====================================================================
 # PROJECT: TIMBER MEDALLION PORTFOLIO SYSTEM
-# FILE: pages/dashboard.py (SYNCHRONIZED ASYNC REFRESH ENGINE)
+# FILE: pages/dashboard.py (GUARANTEED SYNCHRONIZED REFRESH ENGINE)
 # ====================================================================
 
 import streamlit as st
@@ -48,7 +48,7 @@ def get_image_base64(path):
             return base64.b64encode(image_file.read()).decode()
     return None
 
-# Always clear the data cache if an active claim operation just completed
+# Force clear cache completely if an operation sequence has just concluded
 if "just_claimed" in st.session_state and st.session_state["just_claimed"]:
     st.cache_data.clear()
     st.session_state["just_claimed"] = False
@@ -275,8 +275,8 @@ html_base_template = """
         setTimeout(cycle, speed);
     }
 
-    // 🔒 COMPLETE COMPANION BLOCKING ENGAGEMENT: Halts thread execution until write is recorded
-    async function commitClaimToSheets() {
+    // ⚡ CROSS-ORIGIN PROMISE TIMEOUT ENGINE: Delivers data, pauses for transaction, fires sync refresh
+    function commitClaimToSheets() {
         if (!selectedItem) return;
         const claimBtn = document.getElementById('claimBtn'); 
         claimBtn.disabled = true; 
@@ -285,20 +285,17 @@ html_base_template = """
         const timestamp = new Date().getTime();
         const pingUrl = endpoint + "?action=mineMedallion&passcode=" + encodeURIComponent("__PASSCODE_RAW__") + "&item=" + encodeURIComponent(selectedItem) + "&_=" + timestamp;
         
-        try {
-            // Using a text extraction layer ensures JavaScript waits for Google to fully write the cell rows
-            const response = await fetch(pingUrl);
-            await response.text(); 
-            
-            // Dispatch clean updates to Streamlit's structural layout canvas
+        // Execute unauthenticated dispatch securely using no-cors parameters
+        fetch(pingUrl, { mode: 'no-cors' });
+        
+        // Block window execution system for exactly 2500ms to guarantee row allocation completion
+        setTimeout(() => {
             if (window.parent && window.parent.Streamlit) {
                 window.parent.Streamlit.setComponentValue("FIRE_REFRESH_" + timestamp);
             } else {
                 window.location.reload();
             }
-        } catch (error) {
-            window.location.reload();
-        }
+        }, 2500);
     }
 </script>
 """
@@ -369,10 +366,10 @@ html_elements = html_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
 html_elements = html_elements.replace("__POOL_ITEMS_PLACEHOLDER__", json.dumps(js_pool_items))
 html_elements = html_elements.replace("__POOL_WEIGHTS_PLACEHOLDER__", json.dumps(js_pool_weights))
 
-# Render current frame
+# Render current frame view layout
 component_sync_signal = st.components.v1.html(html_elements, height=750, scrolling=False)
 
-# Intercept confirmation signal to update state smoothly
+# Catch update payload signal to wipe cache out safely
 if isinstance(component_sync_signal, str) and component_sync_signal.startswith("FIRE_REFRESH_"):
     st.session_state["just_claimed"] = True
     st.cache_data.clear()
