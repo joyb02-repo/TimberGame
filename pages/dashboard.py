@@ -15,7 +15,7 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
 
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide", initial_sidebar_state="collapsed")
 
-# 🎯 HORIZONTAL OPPOSITE-ALIGNMENT ENGINE: Forces buttons onto a single level, spread across the page edges
+# 🎯 BASE ENVIRONMENT STYLING
 st.markdown("""
 <style>
     .stApp {
@@ -25,64 +25,7 @@ st.markdown("""
         background-size: 24px 24px;
     }
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
-    div.block-container { padding-top: 15px !important; padding-bottom: 10px !important; max-width: 100% !important; }
-    
-    /* 🛠️ ROW SPLIT SYSTEM: Packs parent structural blocks into a space-between flex row layout */
-    [data-testid="stVerticalBlock"] > div:has(div button[key="sys_refresh_btn"]) {
-        width: 100% !important;
-        display: flex !important;
-        flex-direction: row !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        margin: 0 auto !important;
-        padding: 0 15px !important;
-        box-sizing: border-box !important;
-    }
-
-    /* Keep individual container blocks clean and prevent native block line breaks */
-    div[data-testid="element-container"]:has(button[key="sys_refresh_btn"]),
-    div[data-testid="element-container"]:has(button[key="sys_route_store_btn"]) {
-        display: inline-flex !important;
-        width: auto !important;
-    }
-
-    /* 🔄 UPDATE DATA BUTTON - Fixed on Left Side */
-    div.stButton > button[key="sys_refresh_btn"] {
-        background-color: #161925 !important;
-        border: 1px solid #23273A !important;
-        color: #E2E8F0 !important;
-        font-weight: 500 !important;
-        border-radius: 6px !important;
-        padding: 0.45rem 1.5rem !important;
-        width: 240px !important;
-        transition: all 0.2s ease !important;
-        margin: 0 !important;
-    }
-    div.stButton > button[key="sys_refresh_btn"]:hover {
-        background-color: #23273A !important;
-        border-color: #718096 !important;
-        color: #FFF !important;
-    }
-
-    /* 🛒 VISIT STORE BUTTON - Fixed on Right Side */
-    div.stButton > button[key="sys_route_store_btn"] {
-        background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
-        color: #FFFFFF !important;
-        font-weight: 700 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.5px !important;
-        border: none !important;
-        border-radius: 6px !important;
-        padding: 0.5rem 2rem !important;
-        width: 240px !important;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
-        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        margin: 0 !important;
-    }
-    div.stButton > button[key="sys_route_store_btn"]:hover {
-        background: linear-gradient(135deg, #34D399 0%, #10B981 100%) !important;
-        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4) !important;
-    }
+    div.block-container { padding-top: 25px !important; padding-bottom: 10px !important; max-width: 100% !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -98,18 +41,6 @@ LABEL_MAPPING = {
     "Oak": "OAKW", "Maple": "MAPL", "Walnut": "WALN", "Cherry": "CHER",
     "Mahogany": "MHGN", "Ebony": "EBNY", "Rosewood": "RSWD", "Agarwood": "AGAR"
 }
-
-# ====================================================================
-# SYSTEM BACKEND PROCESSORS - TOP LEVEL ACTIONS
-# ====================================================================
-
-if st.button("Update Data 🔄", key="sys_refresh_btn"):
-    st.cache_data.clear()
-    st.rerun()
-
-if st.button("Visit Store 🛒", key="sys_route_store_btn"):
-    st.switch_page("pages/store.py")
-
 
 def get_image_base64(path):
     if os.path.exists(path):
@@ -172,7 +103,7 @@ html_base_template = """
     .quantity-badge { font-size: 12px; font-weight: 700; color: #F4D068; margin-bottom: 3px; min-height: 15px; }
     .label-badge { font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    /* 🛠️ HOVER TEXT STRUCTURAL SYSTEM (REVERTED TO PREVIOUS WORKING VERSION) */
+    /* 🛠️ HOVER TEXT STRUCTURAL SYSTEM */
     .node-tooltip { 
         visibility: hidden; opacity: 0; position: absolute; top: -115px; left: 50%; 
         transform: translateX(-50%); width: 150px; background: #161925; border: 1px solid #282E48; 
@@ -347,10 +278,7 @@ html_base_template = """
         const imgPing = new Image();
         imgPing.onload = imgPing.onerror = function() {
             setTimeout(() => {
-                const parentDoc = window.parent.document;
-                const refreshActuator = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText.includes('Update Data 🔄'));
-                if (refreshActuator) refreshActuator.click();
-                else window.location.reload();
+                window.location.reload();
             }, 500);
         };
         imgPing.src = pingUrl;
