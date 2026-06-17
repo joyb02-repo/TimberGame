@@ -172,6 +172,25 @@ html_base_template = """
     .quantity-badge { font-size: 12px; font-weight: 700; color: #F4D068; margin-bottom: 3px; min-height: 15px; }
     .label-badge { font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
     
+    /* 🛠️ HOVER TEXT STRUCTURAL SYSTEM (REVERTED TO PREVIOUS WORKING VERSION) */
+    .node-tooltip { 
+        visibility: hidden; opacity: 0; position: absolute; top: -115px; left: 50%; 
+        transform: translateX(-50%); width: 150px; background: #161925; border: 1px solid #282E48; 
+        border-radius: 8px; padding: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); 
+        z-index: 9999999 !important; transition: opacity 0.12s ease-in-out; pointer-events: none; 
+    }
+    .grid-node:hover .node-tooltip { visibility: visible; opacity: 1; }
+    .grid-node:first-child .node-tooltip { left: 0; transform: translateX(0); }
+    .grid-node:last-child .node-tooltip { left: auto; right: 0; transform: translateX(0); }
+    
+    .tip-line { font-size: 11px; color: #E2E8F0; margin-bottom: 4px; text-align: left; white-space: nowrap; }
+    .tip-line span { font-weight: 700; color: #F4D068; }
+    .tip-line span.rarity-common { color: #CD7F32; }       
+    .tip-line span.rarity-uncommon { color: #C0C0C0; }     
+    .tip-line span.rarity-rare { color: #3b82f6; }         
+    .tip-line span.rarity-epic { color: #a855f7; }         
+    .tip-line span.rarity-legendary { color: #f59e0b; }    
+    
     .dashboard-row { display: flex; justify-content: center; gap: 20px; margin-top: 30px; padding: 0 15px; }
     .stat-card { background: #161925; border: 1px solid #23273A; border-radius: 6px; padding: 10px 20px; min-width: 180px; text-align: center; }
     .stat-label { font-size: 11px; text-transform: uppercase; color: #718096; margin-bottom: 4px; }
