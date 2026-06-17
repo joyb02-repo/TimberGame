@@ -25,20 +25,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# NATIVE TOP HEADER ROW WITH LOGOUT ACTUATOR
-col_title, col_logout = st.columns([9, 1.2])
-with col_title:
-    st.markdown(f"<h2 style='margin:0; font-weight:600;'>Timber Medallion Portfolio: <span style='color:#F4D068;'>{st.session_state['username'].upper()}</span></h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color:rgba(255,255,255,0.3); margin-top:4px;'>Master tracking dashboard powered directly by cloud inventory records.</p>", unsafe_allow_html=True)
-with col_logout:
-    if st.button("🔓 LOGOUT", use_container_width=True):
-        st.session_state["authenticated"] = False
-        st.session_state["user_passcode"] = ""
-        st.session_state["username"] = "Guest"
-        st.switch_page("login.py")
-
-st.markdown("---")
-
 # Invisible system parameters bridge used to listen to iframe claims
 claim_catch = st.text_input("system_sink", key="system_sink", label_visibility="collapsed")
 if claim_catch and claim_catch.startswith("CLAIM:"):
@@ -192,7 +178,6 @@ html_base_template = """
         
         const imgPing = new Image();
         imgPing.onload = imgPing.onerror = function() {
-            // Secure, native cross-origin framework reload sequence
             try {
                 const targetInput = window.parent.document.querySelector('input[aria-label="system_sink"]');
                 if (targetInput) {
@@ -200,11 +185,8 @@ html_base_template = """
                     targetInput.dispatchEvent(new Event('input', { bubbles: true }));
                     return;
                 }
-            } catch(e) {
-                // Fail-safe path: If browser strictly blocks window.parent due to host domain configs, 
-                // we break out via top-level location change which works flawlessly across all sandbox types.
-                window.top.location.reload();
-            }
+            } catch(e) { }
+            window.top.location.reload();
         };
         imgPing.src = pingUrl;
     }
