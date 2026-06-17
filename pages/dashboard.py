@@ -1,6 +1,6 @@
 # ====================================================================
 # PROJECT: TIMBER MEDALLION PORTFOLIO SYSTEM
-# FILE: pages/dashboard.py (FIXED NATIVE STREAMLIT LAYOUT CONTROLS)
+# FILE: pages/dashboard.py (HORIZONTAL ROW LAYOUT SYSTEM)
 # ====================================================================
 
 import streamlit as st
@@ -15,7 +15,7 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
 
 st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide", initial_sidebar_state="collapsed")
 
-# 🎯 NATIVE COMPONENT BUTTON STYLING OVERRIDE (Forcing colors and block layout)
+# 🎯 HORIZONTAL OPPOSITE-ALIGNMENT ENGINE: Forces buttons onto a single level, spread across the page edges
 st.markdown("""
 <style>
     .stApp {
@@ -27,15 +27,26 @@ st.markdown("""
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
     div.block-container { padding-top: 15px !important; padding-bottom: 10px !important; max-width: 100% !important; }
     
-    /* Center the inner column wrappers */
-    [data-testid="column"] {
+    /* 🛠️ ROW SPLIT SYSTEM: Packs parent structural blocks into a space-between flex row layout */
+    [data-testid="stVerticalBlock"] > div:has(div button[key="sys_refresh_btn"]) {
+        width: 100% !important;
         display: flex !important;
-        flex-direction: column !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
         align-items: center !important;
-        justify-content: center !important;
+        margin: 0 auto !important;
+        padding: 0 15px !important;
+        box-sizing: border-box !important;
     }
-    
-    /* 🔄 UPDATE DATA BUTTON - Wide, matching original format */
+
+    /* Keep individual container blocks clean and prevent native block line breaks */
+    div[data-testid="element-container"]:has(button[key="sys_refresh_btn"]),
+    div[data-testid="element-container"]:has(button[key="sys_route_store_btn"]) {
+        display: inline-flex !important;
+        width: auto !important;
+    }
+
+    /* 🔄 UPDATE DATA BUTTON - Fixed on Left Side */
     div.stButton > button[key="sys_refresh_btn"] {
         background-color: #161925 !important;
         border: 1px solid #23273A !important;
@@ -43,9 +54,9 @@ st.markdown("""
         font-weight: 500 !important;
         border-radius: 6px !important;
         padding: 0.45rem 1.5rem !important;
-        width: 100% !important; 
+        width: 240px !important; /* Elegant matching standard dimensions */
         transition: all 0.2s ease !important;
-        margin-bottom: 4px !important;
+        margin: 0 !important;
     }
     div.stButton > button[key="sys_refresh_btn"]:hover {
         background-color: #23273A !important;
@@ -53,7 +64,7 @@ st.markdown("""
         color: #FFF !important;
     }
 
-    /* 🛒 VISIT STORE BUTTON - New layout & distinct emerald accent color */
+    /* 🛒 VISIT STORE BUTTON - Fixed on Right Side */
     div.stButton > button[key="sys_route_store_btn"] {
         background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
         color: #FFFFFF !important;
@@ -63,10 +74,10 @@ st.markdown("""
         border: none !important;
         border-radius: 6px !important;
         padding: 0.5rem 2rem !important;
-        width: 240px !important; /* Elegant compact centered layout */
+        width: 240px !important; /* Identical structural size width */
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        margin-bottom: 20px !important;
+        margin: 0 !important;
     }
     div.stButton > button[key="sys_route_store_btn"]:hover {
         background: linear-gradient(135deg, #34D399 0%, #10B981 100%) !important;
@@ -89,21 +100,17 @@ LABEL_MAPPING = {
 }
 
 # ====================================================================
-# SYSTEM BACKEND PROCESSORS - TOP LEVEL NATIVE ACTION DECK
+# SYSTEM BACKEND PROCESSORS - TOP LEVEL ACTIONS
 # ====================================================================
 
-# We use 3 structural layout grids to guarantee the dynamic controls lock onto the absolute screen center
-left_track, center_deck, right_track = st.columns([1, 10, 1])
+# Render sequentially in a single container. The flex row container inside the CSS styles 
+# will pick up these specific keys and align them perfectly across opposite sides.
+if st.button("Update Data 🔄", key="sys_refresh_btn"):
+    st.cache_data.clear()
+    st.rerun()
 
-with center_deck:
-    # Button 1: Stretches perfectly to full center window dimensions
-    if st.button("Update Data 🔄", key="sys_refresh_btn"):
-        st.cache_data.clear()
-        st.rerun()
-        
-    # Button 2: Positioned directly underneath and locked to a centered width of 240px
-    if st.button("Visit Store 🛒", key="sys_route_store_btn"):
-        st.switch_page("pages/store.py")
+if st.button("Visit Store 🛒", key="sys_route_store_btn"):
+    st.switch_page("pages/store.py")
 
 
 def get_image_base64(path):
