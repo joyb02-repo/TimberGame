@@ -1,6 +1,6 @@
 # ====================================================================
 # PROJECT: TIMBER MEDALLION PORTFOLIO SYSTEM
-# FILE: pages/dashboard.py (HYBRID DIALOG SHUFFLE SYSTEM)
+# FILE: pages/dashboard.py (CLEAN NATIVE EMBEDDED MODAL ENGINE)
 # ====================================================================
 
 import streamlit as st
@@ -54,7 +54,7 @@ st.markdown("""
         font-weight: 500 !important;
         border-radius: 6px !important;
         padding: 0.45rem 1.5rem !important;
-        width: 240px !important; /* Elegant matching standard dimensions */
+        width: 240px !important;
         transition: all 0.2s ease !important;
         margin: 0 !important;
     }
@@ -74,7 +74,7 @@ st.markdown("""
         border: none !important;
         border-radius: 6px !important;
         padding: 0.5rem 2rem !important;
-        width: 240px !important; /* Identical structural size width */
+        width: 240px !important;
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
         margin: 0 !important;
@@ -82,12 +82,6 @@ st.markdown("""
     div.stButton > button[key="sys_route_store_btn"]:hover {
         background: linear-gradient(135deg, #34D399 0%, #10B981 100%) !important;
         box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4) !important;
-    }
-
-    /* Stylize internal structural elements of the custom layout modal window context */
-    div[data-testid="stDialog"] {
-        background-color: #0E1117 !important;
-        border: 1px solid #23273A !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -159,115 +153,6 @@ for wood_name in MEDALLION_COLUMNS:
     js_pool_items.append(wood_name)
     js_pool_weights.append(weight_value)
 
-
-# ====================================================================
-# COMPACT DIALOG ACTIVATOR OVERLAY MODULE
-# ====================================================================
-
-@st.dialog("Medallion Output Generator", width="small")
-def show_compact_shuffling_dialog():
-    dialog_html_template = """
-    <style>
-        body { margin: 0; padding: 0; background: #0E1117; font-family: 'Inter', sans-serif; overflow: hidden; }
-        .animation-display-modal { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 260px; width: 100%; }
-        .spin-box { width: 140px; height: 140px; border-radius: 12px; background: #161925; border: 3px solid #23273A; display: flex; align-items: center; justify-content: center; }
-        .spin-box img { width: 88%; height: 88%; object-fit: contain; }
-        .outcome-text-wrapper { margin-top: 15px; height: 35px; text-align: center; opacity: 0; transition: opacity 0.2s ease; }
-        .outcome-bottom { font-size: 18px; font-weight: 800; color: #F4D068; }
-        
-        .claim-button { margin-top: 14px; width: 160px; height: 32px; background-color: transparent; border: 2px solid #F4D068; border-radius: 4px; color: #F4D068; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; opacity: 0; transform: translateY(5px); transition: all 0.2s; display: inline-block; }
-        .claim-button.visible { opacity: 1 !important; transform: translateY(0) !important; }
-        .claim-button:hover { background-color: #F4D068; color: #0E1117; }
-    </style>
-
-    <div class="animation-display-modal">
-        <div class="spin-box" id="cyclerBox"><img id="cyclerImg" src="" /></div>
-        <div class="outcome-text-wrapper" id="outcomeWrapper">
-            <div style="font-size:11px; color:#718096; text-transform:uppercase; letter-spacing:1px;">Successfully Mined:</div>
-            <div class="outcome-bottom" id="itemNameTxt"></div>
-        </div>
-        <button class="claim-button" id="claimBtn" onclick="commitClaimToSheets()">Claim Medallion</button>
-    </div>
-
-    <script>
-        const assetLibrary = __ASSET_MAP_PLACEHOLDER__;
-        const pool = __POOL_ITEMS_PLACEHOLDER__;
-        const weights = __POOL_WEIGHTS_PLACEHOLDER__;
-        const endpoint = "__API_URL_PLACEHOLDER__";
-        let selectedItem = "";
-
-        function selectWeightedWinner(items, itemWeights) {
-            const totalWeight = itemWeights.reduce((acc, w) => acc + w, 0);
-            const randomNum = Math.random() * totalWeight;
-            let runningSum = 0;
-            for (let i = 0; i < items.length; i++) {
-                runningSum += itemWeights[i];
-                if (randomNum <= runningSum) return items[i];
-            }
-            return items[items.length - 1];
-        }
-
-        function runMiningSequence() {
-            const img = document.getElementById('cyclerImg');
-            const wrapper = document.getElementById('outcomeWrapper'); 
-            const itemTxt = document.getElementById('itemNameTxt'); 
-            const claimBtn = document.getElementById('claimBtn');
-            
-            let counter = 0; let speed = 40; 
-            selectedItem = selectWeightedWinner(pool, weights);
-            
-            function cycle() {
-                const currentItem = pool[counter % pool.length]; 
-                if (assetLibrary[currentItem]) img.src = assetLibrary[currentItem]; 
-                counter++;
-                if (speed < 320) { 
-                    speed += 16; 
-                    setTimeout(cycle, speed); 
-                } else {
-                    img.src = assetLibrary[selectedItem];
-                    itemTxt.innerText = selectedItem.toUpperCase() + "!"; 
-                    wrapper.style.opacity = "1"; 
-                    claimBtn.classList.add('visible');
-                }
-            }
-            setTimeout(cycle, speed);
-        }
-
-        function commitClaimToSheets() {
-            if (!selectedItem) return;
-            const claimBtn = document.getElementById('claimBtn'); claimBtn.disabled = true; claimBtn.innerText = "Saving...";
-            const pingUrl = endpoint + "?action=mineMedallion&passcode=" + encodeURIComponent("__PASSCODE_RAW__") + "&item=" + encodeURIComponent(selectedItem);
-            
-            const imgPing = new Image();
-            imgPing.onload = imgPing.onerror = function() {
-                setTimeout(() => {
-                    const parentDoc = window.parent.document;
-                    const refreshActuator = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText.includes('Update Data 🔄'));
-                    if (refreshActuator) refreshActuator.click();
-                    else window.location.reload();
-                }, 500);
-            };
-            imgPing.src = pingUrl;
-        }
-
-        // Initialize animation cycle directly when modal frame renders onto dashboard view
-        window.onload = runMiningSequence;
-    </script>
-    """
-    modal_html = dialog_html_template.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
-    modal_html = modal_html.replace("__API_URL_PLACEHOLDER__", API_URL)
-    modal_html = modal_html.replace("__PASSCODE_RAW__", st.session_state["user_passcode"])
-    modal_html = modal_html.replace("__POOL_ITEMS_PLACEHOLDER__", json.dumps(js_pool_items))
-    modal_html = modal_html.replace("__POOL_WEIGHTS_PLACEHOLDER__", json.dumps(js_pool_weights))
-    
-    st.components.v1.html(modal_html, height=270, scrolling=False)
-
-
-# ====================================================================
-# INTERACTIVE LAYOUT DESIGN COMPONENT
-# ====================================================================
-
-# Base HTML template containing unchanged matrix styles and input frameworks
 html_base_template = """
 <style>
     body { margin: 0; padding: 10px 0 0 0; background: transparent; font-family: 'Inter', sans-serif; position: relative; }
@@ -318,6 +203,29 @@ html_base_template = """
     
     .mine-button { width: 424px; height: 46px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }
     .mine-button:disabled { opacity: 0.35; cursor: not-allowed; background-color: #161925 !important; color: #3D4563 !important; border: 1px solid #23273A; box-shadow: none !important; }
+
+    /* 🎴 COMPACT OVERLAY DIALOG SYSTEM (SANDBOX INTEGRATED)
+       Fits completely inside the standard page view without creating extra iframe layers.
+    */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(14, 17, 23, 0.85); backdrop-filter: blur(4px);
+        display: none; align-items: center; justify-content: center; z-index: 999999;
+    }
+    .modal-box {
+        background: #0E1117; border: 1px solid #23273A; border-radius: 12px;
+        width: 320px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+        display: flex; flex-direction: column; align-items: center; text-align: center;
+        position: relative;
+    }
+    .spin-box { width: 140px; height: 140px; border-radius: 12px; background: #161925; border: 3px solid #23273A; display: flex; align-items: center; justify-content: center; }
+    .spin-box img { width: 88%; height: 88%; object-fit: contain; }
+    .outcome-text-wrapper { margin-top: 15px; height: 35px; text-align: center; opacity: 0; transition: opacity 0.2s ease; }
+    .outcome-bottom { font-size: 18px; font-weight: 800; color: #F4D068; }
+    
+    .claim-button { margin-top: 14px; width: 160px; height: 32px; background-color: transparent; border: 2px solid #F4D068; border-radius: 4px; color: #F4D068; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; opacity: 0; transform: translateY(5px); transition: all 0.2s; display: inline-block; }
+    .claim-button.visible { opacity: 1 !important; transform: translateY(0) !important; }
+    .claim-button:hover { background-color: #F4D068; color: #0E1117; }
 </style>
 
 <div class="header-wrapper">
@@ -341,7 +249,18 @@ html_base_template = """
     </div>
     <div class="pin-feedback-msg" id="feedbackMsg" style="color: #718096;"></div>
 
-    <button class="mine-button" id="mineBtn" disabled onclick="window.parent.postMessage({type: 'TRIGGER_MODAL'}, '*')">Mine a Medallion</button>
+    <button class="mine-button" id="mineBtn" disabled onclick="openMiningModal()">Mine a Medallion</button>
+</div>
+
+<div class="modal-overlay" id="miningModal">
+    <div class="modal-box">
+        <div class="spin-box" id="cyclerBox"><img id="cyclerImg" src="" /></div>
+        <div class="outcome-text-wrapper" id="outcomeWrapper">
+            <div style="font-size:11px; color:#718096; text-transform:uppercase; letter-spacing:1px;">Successfully Mined:</div>
+            <div class="outcome-bottom" id="itemNameTxt"></div>
+        </div>
+        <button class="claim-button" id="claimBtn" onclick="commitClaimToSheets()">Claim Medallion</button>
+    </div>
 </div>
 
 <script>
@@ -349,6 +268,7 @@ html_base_template = """
     const pool = __POOL_ITEMS_PLACEHOLDER__;
     const weights = __POOL_WEIGHTS_PLACEHOLDER__;
     const endpoint = "__API_URL_PLACEHOLDER__";
+    let selectedItem = "";
 
     async function evaluatePinAuthorization() {
         const pinValue = document.getElementById("pinField").value.trim();
@@ -367,6 +287,70 @@ html_base_template = """
                 feedback.style.color = "#ef4444"; feedback.innerText = "Invalid code key verification.";
             }
         } catch(e) {}
+    }
+
+    function selectWeightedWinner(items, itemWeights) {
+        const totalWeight = itemWeights.reduce((acc, w) => acc + w, 0);
+        const randomNum = Math.random() * totalWeight;
+        let runningSum = 0;
+        for (let i = 0; i < items.length; i++) {
+            runningSum += itemWeights[i];
+            if (randomNum <= runningSum) return items[i];
+        }
+        return items[items.length - 1];
+    }
+
+    function openMiningModal() {
+        // Display the overlay popup natively
+        document.getElementById("miningModal").style.display = "flex";
+        runMiningSequence();
+    }
+
+    function runMiningSequence() {
+        const img = document.getElementById('cyclerImg');
+        const wrapper = document.getElementById('outcomeWrapper'); 
+        const itemTxt = document.getElementById('itemNameTxt'); 
+        const claimBtn = document.getElementById('claimBtn');
+        
+        wrapper.style.opacity = "0"; 
+        claimBtn.classList.remove('visible');
+        
+        let counter = 0; let speed = 40; 
+        selectedItem = selectWeightedWinner(pool, weights);
+        
+        function cycle() {
+            const currentItem = pool[counter % pool.length]; 
+            if (assetLibrary[currentItem]) img.src = assetLibrary[currentItem]; 
+            counter++;
+            if (speed < 320) { 
+                speed += 16; 
+                setTimeout(cycle, speed); 
+            } else {
+                img.src = assetLibrary[selectedItem];
+                itemTxt.innerText = selectedItem.toUpperCase() + "!"; 
+                wrapper.style.opacity = "1"; 
+                claimBtn.classList.add('visible');
+            }
+        }
+        setTimeout(cycle, speed);
+    }
+
+    function commitClaimToSheets() {
+        if (!selectedItem) return;
+        const claimBtn = document.getElementById('claimBtn'); claimBtn.disabled = true; claimBtn.innerText = "Saving...";
+        const pingUrl = endpoint + "?action=mineMedallion&passcode=" + encodeURIComponent("__PASSCODE_RAW__") + "&item=" + encodeURIComponent(selectedItem);
+        
+        const imgPing = new Image();
+        imgPing.onload = imgPing.onerror = function() {
+            setTimeout(() => {
+                // Triggers parent update safely without structural hack layers
+                const parentDoc = window.parent.document;
+                const refreshActuator = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText.includes('Update Data 🔄'));
+                if (refreshActuator) refreshActuator.click();
+                else window.location.reload();
+            }, 500);
+        };
+        imgPing.src = pingUrl;
     }
 </script>
 """
@@ -437,40 +421,4 @@ html_elements = html_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
 html_elements = html_elements.replace("__POOL_ITEMS_PLACEHOLDER__", json.dumps(js_pool_items))
 html_elements = html_elements.replace("__POOL_WEIGHTS_PLACEHOLDER__", json.dumps(js_pool_weights))
 
-# Render main viewport interface components cleanly.
-# Notice height is trimmed to 625px since animation components have migrated to the overlay dialog.
-st.components.v1.html(html_elements, height=625, scrolling=False)
-
-# ====================================================================
-# MICRO CONTROLLER CAPTURE ACTUATOR
-# ====================================================================
-
-# Capture event messages coming from the sandboxed iframe button callback link
-st.components.v1.html("""
-<script>
-    window.addEventListener('message', function(e) {
-        if (e.data && e.data.type === 'TRIGGER_MODAL') {
-            const parentDoc = window.parent.document;
-            // Search for secret hidden execution element to engage dialog engine
-            const trigger = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText === '_ACTUATE_DIALOG_INTERNAL_');
-            if (trigger) trigger.click();
-        }
-    });
-</script>
-""", height=0, width=0)
-
-if st.button("_ACTUATE_DIALOG_INTERNAL_", type="secondary", help=None):
-    show_compact_shuffling_dialog()
-
-# Render hidden style targets to prevent system button showing layout traces
-st.markdown("""
-<style>
-    div[data-testid="element-container"]:has(button:contains("_ACTUATE_DIALOG_INTERNAL_")),
-    div.stButton > button:contains("_ACTUATE_DIALOG_INTERNAL_") {
-        display: none !important;
-        height: 0px !important;
-        width: 0px !important;
-        visibility: hidden !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+st.components.v1.html(html_elements, height=750, scrolling=False)
