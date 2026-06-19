@@ -398,16 +398,23 @@ html_store_template = """
         };
 
         const targetUrl = endpoint + "?action=executeStoreTrade&payload=" + encodeURIComponent(JSON.stringify(payload));
-        const transactionPing = new Image();
-        transactionPing.onload = transactionPing.onerror = function() {
-            setTimeout(() => {
-                const parentDoc = window.parent.document;
-                const refreshActuator = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText.includes('Update Data 🔄'));
-                if (refreshActuator) refreshActuator.click();
-                else window.location.reload();
-            }, 500);
-        };
-        transactionPing.src = targetUrl;
+        
+        // Execute dynamic asynchronous fetch call to avoid payload pipeline truncations
+        fetch(targetUrl, { mode: 'no-cors' })
+            .then(() => {
+                setTimeout(() => {
+                    const parentDoc = window.parent.document;
+                    const refreshActuator = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText.includes('Update Data 🔄'));
+                    if (refreshActuator) {
+                        refreshActuator.click();
+                    } else {
+                        window.location.reload();
+                    }
+                }, 600);
+            })
+            .catch(() => {
+                window.location.reload();
+            });
     }
 </script>
 """
