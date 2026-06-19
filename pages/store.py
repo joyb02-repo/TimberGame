@@ -5,9 +5,7 @@
 
 import streamlit as st
 import requests
-import os
 import json
-import base64
 
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
     st.switch_page("login.py")
@@ -48,7 +46,6 @@ if st.button("Back to Portfolio ↩️", key="sys_back_dashboard_btn"):
 API_URL = st.secrets["API_URL"]
 user_passcode = st.session_state.get("user_passcode", "DEFAULT_DEMO_KEY")
 
-# Session state cache buster
 if "store_refresh_token" not in st.session_state:
     st.session_state["store_refresh_token"] = 0
 
@@ -70,21 +67,11 @@ live_data, live_inventory, summary_value, summary_collected, dynamic_catalog = f
     user_passcode, st.session_state["store_refresh_token"]
 )
 
-# FIX 1: Convert local disk images to Base64 strings so the iframe can render them inline directly
+# FIX 1: Read files relative to the application's root execution space in GitHub
 def determine_asset_filename(reward_key):
     clean_id = str(reward_key).replace(" ", "")
-    possible_paths = [f"assets/{clean_id}.jpg", f"assets/{clean_id}.png", f"assets/{clean_id}.jpeg"]
-    
-    for path in possible_paths:
-        if os.path.exists(path):
-            try:
-                with open(path, "rb") as img_file:
-                    encoded_string = base64.b64encode(img_file.read()).decode()
-                    mime_type = "image/png" if path.endswith(".png") else "image/jpeg"
-                    return f"data:{mime_type};base64,{encoded_string}"
-            except Exception:
-                pass
-    return "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=150"
+    # Points the sandboxed HTML component directly to the local static runtime path
+    return f"app/static/assets/{clean_id}.jpg"
 
 # Structure dynamic catalog array for template formatting injections
 STORE_ITEMS = []
@@ -105,13 +92,13 @@ for k, v in live_data.items():
     medallion_details[k] = {"name": v.get("Medallion", k.capitalize()), "value": int(v.get("Value", 0))}
 medallions_json = json.dumps(medallion_details)
 
-# FIX 2: Intercept transaction requests inside Python securely via clean query string states
+# FIX 2: Check query params on page render. If found, process the trade in Python backend.
 query_params = st.query_params
 if "payload_packet" in query_params:
     unpacked_payload = query_params["payload_packet"]
-    st.query_params.clear() # Prevent processing feedback loops
+    st.query_params.clear() # Clear out state variables instantly
     
-    with st.spinner("Synchronizing trade vouchers..."):
+    with st.spinner("Processing your trade..."):
         try:
             trade_response = requests.post(API_URL, json={
                 "action": "executeStoreTrade",
@@ -119,12 +106,13 @@ if "payload_packet" in query_params:
                 "payload": unpacked_payload
             }, timeout=15)
             
+            # Immediately invalidate caches and refresh calculations
             st.cache_data.clear()
             st.session_state["store_refresh_token"] += 1
             st.success("🎉 Trade processed successfully! Portfolio balances updated.")
             st.rerun()
         except Exception as e:
-            st.error(f"Transaction synchronization failed: {str(e)}")
+            st.error(f"Transaction failed: {str(e)}")
 
 html_store_template = """
 <style>
@@ -330,15 +318,14 @@ html_store_template = """
 
         const payload = { basket: finalBasketItems, barter_spent: itemsSpentMap };
         
-        // Pass payload context out of iframe sandbox directly via window URL mutations
-        const parentOrigin = window.parent.location.origin;
-        const parentPath = window.parent.location.pathname;
-        window.parent.location.href = parentOrigin + parentPath + "?payload_packet=" + encodeURIComponent(JSON.stringify(payload));
+        // Redirect the top browser tab window safely to Python with query strings 
+        const targetUrl = window.parent.location.origin + window.parent.location.pathname + "?payload_packet=" + encodeURIComponent(JSON.stringify(payload));
+        window.parent.location.href = targetUrl;
     }
 </script>
 """
 
-# Build layout grid with inline base64 image sources
+# Build layout grid using native markdown static assets asset mapping patterns
 grid_items_html = ""
 for item in STORE_ITEMS:
     formatted_desc = item['desc'].replace("**", "<strong>", 1).replace("**", "</strong>", 1) if "**" in item['desc'] else item['desc']
@@ -368,6 +355,5 @@ html_store_elements = html_store_elements.replace("__COLLECTED_PLACEHOLDER__", s
 html_store_elements = html_store_elements.replace("__CATALOG_JSON__", items_json)
 html_store_elements = html_store_elements.replace("__INVENTORY_JSON__", inventory_json)
 html_store_elements = html_store_elements.replace("__MEDALLIONS_JSON__", medallions_json)
-html_store_elements = html_store_elements.replace("__PASSCODE_RAW__", user_passcode)
 
 st.components.v1.html(html_store_elements, height=1050, scrolling=True)
