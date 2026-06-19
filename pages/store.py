@@ -7,6 +7,7 @@ import streamlit as st
 import requests
 import os
 import json
+import base64
 
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
     st.switch_page("login.py")
@@ -47,11 +48,11 @@ if st.button("Back to Portfolio ↩️", key="sys_back_dashboard_btn"):
 API_URL = st.secrets["API_URL"]
 user_passcode = st.session_state.get("user_passcode", "DEFAULT_DEMO_KEY")
 
-# Create a clean cache clearing trick using session state keys
+# Session state cache buster
 if "store_refresh_token" not in st.session_state:
     st.session_state["store_refresh_token"] = 0
 
-@st.cache_data(ttl=300)  # Safe TTL, cleared intentionally on transaction success
+@st.cache_data(ttl=300)
 def fetch_sheet_records(passcode, refresh_trigger):
     try:
         r = requests.get(API_URL, params={"action": "fetchData", "passcode": passcode}, timeout=15)
@@ -69,13 +70,21 @@ live_data, live_inventory, summary_value, summary_collected, dynamic_catalog = f
     user_passcode, st.session_state["store_refresh_token"]
 )
 
-# Helper function maps directly to structural Reward Keys (e.g. "Reward 1" -> "Reward1.jpg")
+# FIX 1: Convert local disk images to Base64 strings so the iframe can render them inline directly
 def determine_asset_filename(reward_key):
     clean_id = str(reward_key).replace(" ", "")
-    # Check if a custom structural file is saved in assets (e.g. assets/Reward1.jpg)
-    if os.path.exists(f"assets/{clean_id}.jpg"):
-        return f"app/assets/{clean_id}.jpg"
-    return "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=150" # Dynamic gift box image fallback
+    possible_paths = [f"assets/{clean_id}.jpg", f"assets/{clean_id}.png", f"assets/{clean_id}.jpeg"]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            try:
+                with open(path, "rb") as img_file:
+                    encoded_string = base64.b64encode(img_file.read()).decode()
+                    mime_type = "image/png" if path.endswith(".png") else "image/jpeg"
+                    return f"data:{mime_type};base64,{encoded_string}"
+            except Exception:
+                pass
+    return "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=150"
 
 # Structure dynamic catalog array for template formatting injections
 STORE_ITEMS = []
@@ -85,7 +94,7 @@ for item in dynamic_catalog:
         "title": item["title"],
         "cost": item["cost"],
         "desc": item["description"],
-        "img_filename": determine_asset_filename(item["reward_key"]) # Uses structural keys directly
+        "img_filename": determine_asset_filename(item["reward_key"])
     })
 
 items_json = json.dumps(STORE_ITEMS)
@@ -96,14 +105,26 @@ for k, v in live_data.items():
     medallion_details[k] = {"name": v.get("Medallion", k.capitalize()), "value": int(v.get("Value", 0))}
 medallions_json = json.dumps(medallion_details)
 
-# Catch the execution callback when JavaScript completes a checkout round natively
+# FIX 2: Intercept transaction requests inside Python securely via clean query string states
 query_params = st.query_params
-if "action" in query_params and query_params["action"] == "trade_complete":
-    st.query_params.clear() # Clear out URLs query state values
-    st.cache_data.clear()   # Erase cached sheets records storage completely
-    st.session_state["store_refresh_token"] += 1 # Force cache key eviction bump
-    st.success("🎉 Trade processed successfully! Portfolio balances updated.")
-    st.rerun()
+if "payload_packet" in query_params:
+    unpacked_payload = query_params["payload_packet"]
+    st.query_params.clear() # Prevent processing feedback loops
+    
+    with st.spinner("Synchronizing trade vouchers..."):
+        try:
+            trade_response = requests.post(API_URL, json={
+                "action": "executeStoreTrade",
+                "passcode": user_passcode,
+                "payload": unpacked_payload
+            }, timeout=15)
+            
+            st.cache_data.clear()
+            st.session_state["store_refresh_token"] += 1
+            st.success("🎉 Trade processed successfully! Portfolio balances updated.")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Transaction synchronization failed: {str(e)}")
 
 html_store_template = """
 <style>
@@ -203,7 +224,6 @@ html_store_template = """
     const itemCatalog = __CATALOG_JSON__;
     const userInventory = __INVENTORY_JSON__;
     const medallionMetadata = __MEDALLIONS_JSON__;
-    const endpoint = "__API_URL_PLACEHOLDER__";
     
     let cart = {};
 
@@ -308,22 +328,17 @@ html_store_template = """
             }
         }
 
-        const payload = { passcode: "__PASSCODE_RAW__", basket: finalBasketItems, barter_spent: itemsSpentMap };
-        const targetUrl = endpoint + "?action=executeStoreTrade&payload=" + encodeURIComponent(JSON.stringify(payload));
+        const payload = { basket: finalBasketItems, barter_spent: itemsSpentMap };
         
-        // Use standard asynchronous navigation callback to let Python trigger interface sync on parent level
-        fetch(targetUrl, { mode: 'no-cors' }).then(() => {
-            setTimeout(() => {
-                window.parent.location.href = window.parent.location.origin + window.parent.location.pathname + "?action=trade_complete";
-            }, 800);
-        }).catch(() => {
-            window.parent.location.href = window.parent.location.origin + window.parent.location.pathname + "?action=trade_complete";
-        });
+        // Pass payload context out of iframe sandbox directly via window URL mutations
+        const parentOrigin = window.parent.location.origin;
+        const parentPath = window.parent.location.pathname;
+        window.parent.location.href = parentOrigin + parentPath + "?payload_packet=" + encodeURIComponent(JSON.stringify(payload));
     }
 </script>
 """
 
-# Build layout grid with explicit structural image asset lookups
+# Build layout grid with inline base64 image sources
 grid_items_html = ""
 for item in STORE_ITEMS:
     formatted_desc = item['desc'].replace("**", "<strong>", 1).replace("**", "</strong>", 1) if "**" in item['desc'] else item['desc']
@@ -331,7 +346,7 @@ for item in STORE_ITEMS:
     <div class="store-card">
         <div style="width: 100%;">
             <div class="item-image-frame">
-                <img src="{item['img_filename']}" onerror="this.onerror=null; this.parentElement.innerText='🎁';" />
+                <img src="{item['img_filename']}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=150';" />
             </div>
             <div class="item-title">{item['title']}</div>
             <div class="item-desc">{formatted_desc}</div>
@@ -354,6 +369,5 @@ html_store_elements = html_store_elements.replace("__CATALOG_JSON__", items_json
 html_store_elements = html_store_elements.replace("__INVENTORY_JSON__", inventory_json)
 html_store_elements = html_store_elements.replace("__MEDALLIONS_JSON__", medallions_json)
 html_store_elements = html_store_elements.replace("__PASSCODE_RAW__", user_passcode)
-html_store_elements = html_store_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
 
 st.components.v1.html(html_store_elements, height=1050, scrolling=True)
