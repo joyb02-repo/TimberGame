@@ -8,6 +8,7 @@ import requests
 import json
 import os
 import base64
+import re
 
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
     st.switch_page("login.py")
@@ -69,42 +70,42 @@ live_data, live_inventory, summary_value, summary_collected, dynamic_catalog = f
     user_passcode, st.session_state["store_refresh_token"]
 )
 
-# UPGRADED ASSET LOOKUP: Dynamic directory scanner to safely match cloud repo paths
-def determine_asset_filename(reward_key):
-    # Remove spacing and switch to lower case for uniform lookups
-    clean_target = str(reward_key).replace(" ", "").lower()
+# FIXED LOOKUP: Specifically maps to Reward1.jpg, Reward2.jpg, etc.
+def determine_asset_filename(reward_key, index_fallback):
+    # Extract any digits from the reward key string (e.g., "reward_key_1" -> "1")
+    digits = re.findall(r'\d+', str(reward_key))
+    num_id = digits[0] if digits else str(index_fallback + 1)
     
-    # Check both potential directory mappings inside Streamlit runtime instances
-    possible_dirs = ["assets", os.path.join(os.getcwd(), "assets")]
+    # Target filename matches your exact GitHub asset setup
+    target_filename = f"Reward{num_id}.jpg"
     
-    for directory in possible_dirs:
-        if os.path.exists(directory):
+    # Check common repository runtime root directories
+    possible_paths = [
+        f"assets/{target_filename}",
+        os.path.join(os.getcwd(), "assets", target_filename)
+    ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
             try:
-                # Scan all files inside the repository asset folder
-                for file in os.listdir(directory):
-                    file_name_only, ext = os.path.splitext(file)
-                    # If file matches reward identifier (ignoring casing differences)
-                    if file_name_only.replace(" ", "").lower() == clean_target:
-                        full_path = os.path.join(directory, file)
-                        with open(full_path, "rb") as img_file:
-                            encoded_string = base64.b64encode(img_file.read()).decode()
-                            mime_type = "image/png" if ext.lower() == ".png" else "image/jpeg"
-                            return f"data:{mime_type};base64,{encoded_string}"
+                with open(path, "rb") as img_file:
+                    encoded_string = base64.b64encode(img_file.read()).decode()
+                    return f"data:image/jpeg;base64,{encoded_string}"
             except Exception:
                 pass
                 
-    # Direct fallback if encoding fails: link it directly using the standard static path
-    return f"app/static/assets/{reward_key.replace(' ', '')}.jpg"
+    # Fallback path if the application's base64 reader fails to locate the file
+    return f"app/static/assets/{target_filename}"
 
 # Structure dynamic catalog array for template formatting injections
 STORE_ITEMS = []
-for item in dynamic_catalog:
+for idx, item in enumerate(dynamic_catalog):
     STORE_ITEMS.append({
         "id": item["reward_key"], 
         "title": item["title"],
         "cost": item["cost"],
         "desc": item["description"],
-        "img_filename": determine_asset_filename(item["reward_key"])
+        "img_filename": determine_asset_filename(item["reward_key"], idx)
     })
 
 items_json = json.dumps(STORE_ITEMS)
