@@ -32,8 +32,7 @@ def get_image_base64(path):
 
 logo_b64 = get_image_base64("assets/login_logo.png")
 
-# Persistent connection pooling to eliminate false timeouts
-@st.cache_resource(ttl=600)
+# REMOVED @st.cache_resource TO PREVENT SCRIPT STALENESS
 def get_http_session():
     session = requests.Session()
     adapter = requests.adapters.HTTPAdapter(max_retries=2)
@@ -41,17 +40,15 @@ def get_http_session():
     session.mount("http://", adapter)
     return session
 
-# Global UI Style Framework - Destroys hidden structural paddings to completely remove the top gap
+# Global UI Style Framework
 st.markdown("""
 <style>
-    /* Absolute purge of hidden padding heights across ALL possible Streamlit layouts */
     html, body, .stApp, [data-testid="stMain"], [data-testid="stMainContainer"], .main, .block-container, [data-testid="stMainZone"], [data-testid="stVerticalBlock"] {
         margin-top: 0px !important;
         padding-top: 0px !important;
         box-sizing: border-box !important;
     }
 
-    /* Force the wrapper canvas to center objects smoothly without scrolling over boundaries */
     html, body, .stApp, [data-testid="stMain"], [data-testid="stMainContainer"], .main, .block-container, [data-testid="stMainZone"] {
         margin-bottom: 0 !important;
         padding-left: 0 !important;
@@ -74,7 +71,6 @@ st.markdown("""
         background-size: 24px 24px;
     }
     
-    /* Clean up default header bar structures entirely */
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { 
         display: none !important; 
         visibility: hidden !important; 
@@ -83,7 +79,6 @@ st.markdown("""
         padding: 0px !important; 
     }
     
-    /* REMOVE THE MASSIVE OUTER DIALOGUE BACKGROUND CONTAINER */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background: transparent !important;
         border: none !important;
@@ -97,7 +92,6 @@ st.markdown("""
         align-items: center !important;
     }
     
-    /* Central Core Card Frame - Fixed margin values completely eliminated for an adaptive dynamic center balance */
     div[data-testid="stVerticalBlock"]:has(div.login-card-anchor) {
         background: #161925 !important;
         border: 1px solid #23273A !important;
@@ -106,7 +100,7 @@ st.markdown("""
         max-width: 400px !important; 
         width: min(400px, 88vw) !important;
         max-height: 90vh !important; 
-        margin: auto !important; /* Forces top/bottom gaps to breathe and adjust equally based on screen real estate */
+        margin: auto !important;
         box-shadow: 0 20px 45px rgba(0,0,0,0.5) !important;
         text-align: center !important;
         box-sizing: border-box !important;
@@ -116,14 +110,12 @@ st.markdown("""
         justify-content: center !important;
     }
     
-    /* Responsive Element Spacings */
     .login-logo-container { width: 100%; text-align: center; margin-bottom: min(2.5vh, 20px); display: flex; justify-content: center; }
     .login-logo-container img { height: min(12vh, 100px); width: auto; object-fit: contain; }
     
     .custom-login-header { font-size: min(5vw, 20px); font-weight: 600; color: #FFFFFF; margin-bottom: min(1vh, 8px); width: 100%; text-align: center !important; letter-spacing: 0.5px; font-family: 'Inter', sans-serif; }
     .custom-login-sub { font-size: min(3.5vw, 12px); color: rgba(255, 255, 255, 0.4); margin-bottom: min(3vh, 22px); width: 100%; text-align: center !important; line-height: 1.4; font-family: 'Inter', sans-serif; }
     
-    /* Centralized Passcode input text logic */
     div.stTextInput { width: min(150px, 40vw) !important; margin: 0 auto min(0.5vh, 4px) auto !important; }
     
     div[data-testid="stTextInput"] div[data-component="stTextInputRootElement"] {
@@ -162,7 +154,6 @@ st.markdown("""
         padding: 0px !important; 
     }
     
-    /* Golden Action Button Styles */
     div.stButton {
         width: 100% !important;
         margin: min(2.5vh, 20px) 0 0 0 !important;
@@ -199,7 +190,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Build anchor flag mapping target
 st.markdown('<div class="login-card-anchor"></div>', unsafe_allow_html=True)
 
 if logo_b64:
