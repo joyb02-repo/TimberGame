@@ -47,8 +47,12 @@ if st.button("Back to Portfolio ↩️", key="sys_back_dashboard_btn"):
 API_URL = st.secrets["API_URL"]
 user_passcode = st.session_state.get("user_passcode", "DEFAULT_DEMO_KEY")
 
-@st.cache_data(ttl=3)
-def fetch_sheet_records(passcode):
+# Create a clean cache clearing trick using session state keys
+if "store_refresh_token" not in st.session_state:
+    st.session_state["store_refresh_token"] = 0
+
+@st.cache_data(ttl=300)  # Safe TTL, cleared intentionally on transaction success
+def fetch_sheet_records(passcode, refresh_trigger):
     try:
         r = requests.get(API_URL, params={"action": "fetchData", "passcode": passcode}, timeout=15)
         if r.status_code == 200:
@@ -61,27 +65,27 @@ def fetch_sheet_records(passcode):
     except: pass
     return {}, {}, "0 PTS", "0", []
 
-live_data, live_inventory, summary_value, summary_collected, dynamic_catalog = fetch_sheet_records(user_passcode)
+live_data, live_inventory, summary_value, summary_collected, dynamic_catalog = fetch_sheet_records(
+    user_passcode, st.session_state["store_refresh_token"]
+)
 
-# Helper function to convert raw titles to standard asset filename matches
-def determine_asset_filename(title):
-    t = title.lower()
-    if "chocolate" in t: return "ChocolateBar.jpg"
-    if "candy" in t or "lolly" in t: return "Lollies.jpg"
-    if "pizza" in t: return "Pizza.jpg"
-    if "nugget" in t: return "Nuggets.jpg"
-    if "gift" in t: return "GiftCards.jpg"
-    return "Fallback.jpg"
+# Helper function maps directly to structural Reward Keys (e.g. "Reward 1" -> "Reward1.jpg")
+def determine_asset_filename(reward_key):
+    clean_id = str(reward_key).replace(" ", "")
+    # Check if a custom structural file is saved in assets (e.g. assets/Reward1.jpg)
+    if os.path.exists(f"assets/{clean_id}.jpg"):
+        return f"app/assets/{clean_id}.jpg"
+    return "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=150" # Dynamic gift box image fallback
 
 # Structure dynamic catalog array for template formatting injections
 STORE_ITEMS = []
 for item in dynamic_catalog:
     STORE_ITEMS.append({
-        "id": item["reward_key"], # Reward 1, Reward 2, etc.
+        "id": item["reward_key"], 
         "title": item["title"],
         "cost": item["cost"],
         "desc": item["description"],
-        "img_filename": determine_asset_filename(item["title"])
+        "img_filename": determine_asset_filename(item["reward_key"]) # Uses structural keys directly
     })
 
 items_json = json.dumps(STORE_ITEMS)
@@ -91,6 +95,15 @@ medallion_details = {}
 for k, v in live_data.items():
     medallion_details[k] = {"name": v.get("Medallion", k.capitalize()), "value": int(v.get("Value", 0))}
 medallions_json = json.dumps(medallion_details)
+
+# Catch the execution callback when JavaScript completes a checkout round natively
+query_params = st.query_params
+if "action" in query_params and query_params["action"] == "trade_complete":
+    st.query_params.clear() # Clear out URLs query state values
+    st.cache_data.clear()   # Erase cached sheets records storage completely
+    st.session_state["store_refresh_token"] += 1 # Force cache key eviction bump
+    st.success("🎉 Trade processed successfully! Portfolio balances updated.")
+    st.rerun()
 
 html_store_template = """
 <style>
@@ -108,7 +121,8 @@ html_store_template = """
     .store-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%; box-sizing: border-box; padding: 0 10px; margin-bottom: 35px; }
     .store-card { background: #161925; border: 1px solid #23273A; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: space-between; }
     
-    .item-image-frame { width: 100%; height: 140px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; background: #0E1117; border-radius: 6px; overflow: hidden; border: 1px solid #1E2235; font-size: 40px; }
+    .item-image-frame { width: 100%; height: 140px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; background: #0E1117; border-radius: 6px; overflow: hidden; border: 1px solid #1E2235; }
+    .item-image-frame img { height: 100%; width: 100%; object-fit: cover; }
     
     .item-title { font-size: 15px; font-weight: 700; color: #FFFFFF; margin-bottom: 6px; }
     .item-desc { font-size: 12px; color: rgba(255, 255, 255, 0.4); line-height: 1.4; margin-bottom: 15px; min-height: 34px; }
@@ -290,7 +304,6 @@ html_store_template = """
         for (let key in cart) {
             if (cart[key] > 0) {
                 const item = itemCatalog.find(i => i.id === key);
-                // Package structural information to track dynamic keys
                 finalBasketItems[key] = { qty: cart[key], title: item.title };
             }
         }
@@ -298,26 +311,28 @@ html_store_template = """
         const payload = { passcode: "__PASSCODE_RAW__", basket: finalBasketItems, barter_spent: itemsSpentMap };
         const targetUrl = endpoint + "?action=executeStoreTrade&payload=" + encodeURIComponent(JSON.stringify(payload));
         
+        // Use standard asynchronous navigation callback to let Python trigger interface sync on parent level
         fetch(targetUrl, { mode: 'no-cors' }).then(() => {
             setTimeout(() => {
-                const parentDoc = window.parent.document;
-                const refreshActuator = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText.includes('Update Data 🔄'));
-                if (refreshActuator) refreshActuator.click();
-                else window.location.reload();
-            }, 600);
-        }).catch(() => { window.location.reload(); });
+                window.parent.location.href = window.parent.location.origin + window.parent.location.pathname + "?action=trade_complete";
+            }, 800);
+        }).catch(() => {
+            window.parent.location.href = window.parent.location.origin + window.parent.location.pathname + "?action=trade_complete";
+        });
     }
 </script>
 """
 
-# Build the layout grid items while converting raw spreadsheet bold text descriptions into HTML rules
+# Build layout grid with explicit structural image asset lookups
 grid_items_html = ""
 for item in STORE_ITEMS:
     formatted_desc = item['desc'].replace("**", "<strong>", 1).replace("**", "</strong>", 1) if "**" in item['desc'] else item['desc']
     grid_items_html += f"""
     <div class="store-card">
         <div style="width: 100%;">
-            <div class="item-image-frame">🎁</div>
+            <div class="item-image-frame">
+                <img src="{item['img_filename']}" onerror="this.onerror=null; this.parentElement.innerText='🎁';" />
+            </div>
             <div class="item-title">{item['title']}</div>
             <div class="item-desc">{formatted_desc}</div>
         </div>
