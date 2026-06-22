@@ -43,6 +43,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# 🔄 NATIVE REFRESH ACTUATOR TRIGGER: Hidden from direct visual grid flows
+if st.button("Refresh Cache Data 🔄", key="sys_store_internal_refresh"):
+    st.cache_data.clear()
+    st.rerun()
+
 if st.button("Back to Portfolio ↩️", key="sys_back_dashboard_btn"):
     st.switch_page("pages/dashboard.py")
 
@@ -52,30 +57,7 @@ user_passcode = st.session_state.get("user_passcode", "DEFAULT_DEMO_KEY")
 if "store_refresh_token" not in st.session_state:
     st.session_state["store_refresh_token"] = 0
 
-# --- FIXED TRANSACTION PAYLOAD HANDLING WITH EXPLICIT RERUN ---
-query_params = st.query_params
-if "payload_packet" in query_params:
-    unpacked_payload = query_params["payload_packet"]
-    st.query_params.clear() 
-    
-    with st.spinner("Writing changes directly to Google Sheets master_sheet..."):
-        try:
-            # Post transaction data straight to your Apps Script backend endpoint
-            trade_response = requests.post(API_URL, json={
-                "action": "executeStoreTrade",
-                "passcode": user_passcode,
-                "payload": unpacked_payload
-            }, timeout=15)
-            
-            # Reset cache tags and force reload with refreshed database pulls
-            st.cache_data.clear()
-            st.session_state["store_refresh_token"] += 1
-            st.toast("🎉 Trade successfully saved to Google Sheets master_sheet!")
-            st.rerun()  # Forces parent refresh to wipe iframe button lock
-        except Exception as e:
-            st.error(f"Transaction failed: {str(e)}")
-
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=10)
 def fetch_sheet_records(passcode, refresh_trigger):
     try:
         r = requests.get(API_URL, params={"action": "fetchData", "passcode": passcode}, timeout=15)
@@ -209,7 +191,7 @@ html_store_template = """
 <div class="modal-overlay" id="checkoutModal">
     <div class="modal-box">
         <div class="modal-title">Verify Trade Voucher</div>
-        <div style="text-align:left; font-size:12px; font-weight:700; color:#718096; text-transform:uppercase; margin-bottom:8px;">Review Claims (Edit quantities on background cards if needed):</div>
+        <div style="text-align:left; font-size:12px; font-weight:700; color:#718096; text-transform:uppercase; margin-bottom:8px;">Review Claims (Modify quantities on the background grid items if required):</div>
         <div class="summary-section" id="cartSummaryContainer"></div>
         
         <div style="text-align:left; font-size:12px; font-weight:700; color:#718096; text-transform:uppercase; margin-bottom:8px;">Select Medallions to Exchange (Barter Coverage):</div>
@@ -230,6 +212,7 @@ html_store_template = """
     const itemCatalog = __CATALOG_JSON__;
     const userInventory = __INVENTORY_JSON__;
     const medallionMetadata = __MEDALLIONS_JSON__;
+    const endpoint = "__API_URL_PLACEHOLDER__";
     
     let cart = {};
 
@@ -315,11 +298,11 @@ html_store_template = """
         else { err.innerText = "Insufficient barter coverage. Add more medallions."; btn.disabled = true; }
     }
 
+    // ⚡ INSTANT IMAGE-PING DISPATCH ENGINE (Dashboard Style)
     function executeFinalTransaction() {
         const tradeBtn = document.getElementById("finalTradeBtn");
         tradeBtn.disabled = true;
-        tradeBtn.style.opacity = "0.5";
-        tradeBtn.innerText = "Processing Trade Voucher...";
+        tradeBtn.innerText = "Saving to Google Sheets...";
 
         let itemsSpentMap = {};
         document.querySelectorAll(".barter-select").forEach(sel => {
@@ -337,9 +320,23 @@ html_store_template = """
 
         const payload = { basket: finalBasketItems, barter_spent: itemsSpentMap };
         
-        const parentOrigin = window.parent.location.origin;
-        const parentPath = window.parent.location.pathname;
-        window.parent.location.href = parentOrigin + parentPath + "?payload_packet=" + encodeURIComponent(JSON.stringify(payload));
+        // Target endpoint directly using the identical pipeline paradigm from dashboard sequence
+        const dispatchUrl = endpoint + "?action=executeStoreTrade&passcode=" + encodeURIComponent("__PASSCODE_RAW__") + "&payload=" + encodeURIComponent(JSON.stringify(payload));
+        
+        const imgPing = new Image();
+        imgPing.onload = imgPing.onerror = function() {
+            setTimeout(() => {
+                const parentDoc = window.parent.document;
+                // Safely grab our hidden native component target to clear data matrix values and repaint elements
+                const refreshActuator = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText.includes('Refresh Cache Data 🔄'));
+                if (refreshActuator) {
+                    refreshActuator.click();
+                } else {
+                    window.parent.location.reload();
+                }
+            }, 600);
+        };
+        imgPing.src = dispatchUrl;
     }
 </script>
 """
@@ -375,5 +372,7 @@ html_store_elements = html_store_elements.replace("__COLLECTED_PLACEHOLDER__", s
 html_store_elements = html_store_elements.replace("__CATALOG_JSON__", items_json)
 html_store_elements = html_store_elements.replace("__INVENTORY_JSON__", inventory_json)
 html_store_elements = html_store_elements.replace("__MEDALLIONS_JSON__", medallions_json)
+html_store_elements = html_store_elements.replace("__PASSCODE_RAW__", user_passcode)
+html_store_elements = html_store_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
 
 st.components.v1.html(html_store_elements, height=1050, scrolling=True)
