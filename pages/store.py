@@ -76,29 +76,32 @@ live_data, live_inventory, summary_value, summary_collected, dynamic_catalog = f
 )
 
 def determine_asset_filename(reward_key, index_fallback):
-    # Extracts the number out of strings like "Reward 1" or "Reward1"
+    # Extracts number (e.g., "Reward 1" or "Reward1" -> "1")
     digits = re.findall(r'\d+', str(reward_key))
     num_id = digits[0] if digits else str(index_fallback + 1)
     target_filename = f"Reward{num_id}.jpg"
     
+    # Exhaustive cross-platform directory scan to find local file
     possible_paths = [
         os.path.join(os.getcwd(), "assets", target_filename),
         os.path.join(os.getcwd(), "app", "static", "assets", target_filename),
-        f"assets/{target_filename}",
-        f"app/static/assets/{target_filename}"
+        os.path.join(os.path.dirname(__file__), "..", "assets", target_filename),
+        os.path.join(os.path.dirname(__file__), "assets", target_filename),
+        f"assets/{target_filename}"
     ]
     
     for path in possible_paths:
-        if os.path.exists(path):
+        normalized_path = os.path.abspath(path)
+        if os.path.exists(normalized_path):
             try:
-                with open(path, "rb") as img_file:
+                with open(normalized_path, "rb") as img_file:
                     encoded_string = base64.b64encode(img_file.read()).decode()
                     return f"data:image/jpeg;base64,{encoded_string}"
             except Exception:
                 pass
                 
-    # Direct fallback asset mapping URL fallback route
-    return f"https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=300"
+    # Fallback placeholder to verify structural design rendering if disk layout fails
+    return "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400"
 
 STORE_ITEMS = []
 for idx, item in enumerate(dynamic_catalog):
@@ -342,7 +345,6 @@ html_store_template = """
 </script>
 """
 
-# Fixed blueprint fragment mapping logic injection securely
 CARD_TEMPLATE = """
 <div class="store-card">
     <div style="width: 100%;">
