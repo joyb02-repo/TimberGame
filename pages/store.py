@@ -76,17 +76,16 @@ live_data, live_inventory, summary_value, summary_collected, dynamic_catalog = f
 
 def determine_asset_filename(reward_key, index_fallback):
     """
-    Extracts numerical indicators directly from column A keys to target Reward[X].jpg files
-    on your live GitHub raw CDN infrastructure accurately.
+    Constructs accurate GitHub direct raw paths from the numeric Reward Keys.
     """
-    # Pull any integers out of the key string or number value safely
+    # Pull any integers out of your key column (e.g., '1' -> '1')
     digits = re.findall(r'\d+', str(reward_key))
     num_id = digits[0] if digits else str(index_fallback + 1)
     
-    github_user = "joyb02"
+    # Updated to match your exact live repository path: joyb02-repo
+    github_user = "joyb02-repo"
     github_repo = "MedallionManager"
     
-    # Resolves directly to your workspace repository asset URLs
     return f"https://raw.githubusercontent.com/{github_user}/{github_repo}/main/assets/Reward{num_id}.jpg"
 
 STORE_ITEMS = []
