@@ -76,13 +76,12 @@ live_data, live_inventory, summary_value, summary_collected, dynamic_catalog = f
 
 def determine_asset_filename(reward_key, index_fallback):
     """
-    Constructs accurate GitHub direct raw paths from the numeric Reward Keys.
+    Constructs GitHub direct raw CDN paths based on the numeric column A spreadsheet key.
     """
-    # Pull any integers out of your key column (e.g., '1' -> '1')
     digits = re.findall(r'\d+', str(reward_key))
     num_id = digits[0] if digits else str(index_fallback + 1)
     
-    # Updated to match your exact live repository path: joyb02-repo
+    # Using your repository credentials
     github_user = "joyb02-repo"
     github_repo = "MedallionManager"
     
@@ -122,9 +121,11 @@ html_store_template = """
     .store-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%; box-sizing: border-box; padding: 0 10px; margin-bottom: 35px; }
     .store-card { background: #161925; border: 1px solid #23273A; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: space-between; }
     
-    .item-image-frame { width: 100%; height: 140px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; background: #0E1117; border-radius: 6px; overflow: hidden; border: 1px solid #1E2235; }
-    .item-image-frame img { height: 100%; width: 100%; object-fit: cover; }
+    .item-image-frame { width: 100%; height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 15px; background: #0E1117; border-radius: 6px; overflow: hidden; border: 1px solid #1E2235; }
+    .item-image-frame img { height: 75%; width: 100%; object-fit: cover; }
     
+    .url-debugger-box { width: 90%; font-size: 9px; color: #718096; word-break: break-all; background: #1F2438; padding: 2px 4px; border-radius: 4px; margin-top: 2px; text-align: left; }
+
     .item-title { font-size: 15px; font-weight: 700; color: #FFFFFF; margin-bottom: 6px; }
     .item-desc { font-size: 12px; color: rgba(255, 255, 255, 0.4); line-height: 1.4; margin-bottom: 15px; min-height: 34px; }
     .item-cost-badge { font-size: 13px; font-weight: 700; color: #10B981; margin-bottom: 15px; }
@@ -334,7 +335,8 @@ CARD_TEMPLATE = """
 <div class="store-card">
     <div style="width: 100%;">
         <div class="item-image-frame">
-            <img src="__IMG__" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400';" />
+            <img src="__IMG__" />
+            <div class="url-debugger-box">__IMG__</div>
         </div>
         <div class="item-title">__TITLE__</div>
         <div class="item-desc">__DESC__</div>
