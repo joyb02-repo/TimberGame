@@ -8,7 +8,6 @@ import requests
 import json
 import os
 import re
-from streamlit.web.server.server import Server
 
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
     st.switch_page("login.py")
@@ -75,33 +74,19 @@ live_data, live_inventory, summary_value, summary_collected, dynamic_catalog = f
     user_passcode, st.session_state["store_refresh_token"]
 )
 
-def get_streamlit_app_url():
-    """Dynamically determines the current app base URL to serve static assets accurately."""
-    try:
-        # Pull server information to extract hosted domain context
-        headers = st.context.headers
-        if "Host" in headers:
-            proto = headers.get("X-Forwarded-Proto", "https")
-            return f"{proto}://{headers['Host']}"
-    except:
-        pass
-    return ""
-
-def determine_asset_filename(reward_key, index_fallback, base_url):
-    # Extracts number (e.g., "Reward 1" -> "1")
+def determine_asset_filename(reward_key, index_fallback):
+    """
+    Directly targets your files using GitHub's raw raw content delivery URLs
+    Bypasses local server routing restrictions inside the custom iframe environment.
+    """
     digits = re.findall(r'\d+', str(reward_key))
     num_id = digits[0] if digits else str(index_fallback + 1)
-    target_filename = f"Reward{num_id}.jpg"
     
-    if base_url:
-        # Route through Streamlit's native static serving directory setup
-        return f"{base_url}/app/static/assets/{target_filename}"
+    # Matches repository name and exact asset capitalization shown in GitHub screenshots
+    github_username = "joyb02"
+    repository_name = "MedallionManager"
     
-    # Absolute local routing fallback for fallback local offline run checks
-    return f"app/static/assets/{target_filename}"
-
-# Get the base app hosting address
-app_base_url = get_streamlit_app_url()
+    return f"https://raw.githubusercontent.com/{github_username}/{repository_name}/main/assets/Reward{num_id}.jpg"
 
 STORE_ITEMS = []
 for idx, item in enumerate(dynamic_catalog):
@@ -110,7 +95,7 @@ for idx, item in enumerate(dynamic_catalog):
         "title": item["title"],
         "cost": item["cost"],
         "desc": item["description"],
-        "img_filename": determine_asset_filename(item["reward_key"], idx, app_base_url)
+        "img_filename": determine_asset_filename(item["reward_key"], idx)
     })
 
 items_json = json.dumps(STORE_ITEMS)
@@ -349,7 +334,7 @@ CARD_TEMPLATE = """
 <div class="store-card">
     <div style="width: 100%;">
         <div class="item-image-frame">
-            <img src="__IMG__" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=300';" />
+            <img src="__IMG__" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400';" />
         </div>
         <div class="item-title">__TITLE__</div>
         <div class="item-desc">__DESC__</div>
