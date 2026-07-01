@@ -408,7 +408,7 @@ for wood_name in MEDALLION_COLUMNS:
         
         # Display medallion value as plain points, not currency
         if value != "N/A":
-            value = f"{str(value).strip()} PTS"
+            value = f"{str(value).strip()} pts"
         prob_str = str(raw_probability).replace("%", "").strip()
         try:
             prob_val = float(prob_str)
