@@ -7,6 +7,7 @@ import streamlit as st
 import requests
 import json
 import os
+import re
 
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
     st.switch_page("login.py")
@@ -75,14 +76,18 @@ live_data, live_inventory, summary_value, summary_collected, dynamic_catalog = f
 
 def determine_asset_filename(reward_key, index_fallback):
     """
-    Directly converts numeric column A keys to integer strings.
-    Guarantees clean paths like Reward1.jpg, Reward2.jpg, avoiding float parsing bugs.
+    Tries to grab numeric values safely. If anything fails or formats weirdly, 
+    it falls back cleanly to the layout grid sequence number (index_fallback + 1).
     """
-    try:
-        # Convert to float first to safely clean up any decimal points (e.g. "1.0" -> 1)
-        num_id = str(int(float(str(reward_key).strip())))
-    except (ValueError, TypeError):
-        # Fallback to catalog position indexing if your spreadsheet contains an empty cell or text string
+    raw_str = str(reward_key).strip().lower()
+    
+    # Extract only clean numerical digits from string if possible
+    digits = re.findall(r'\d+', raw_str)
+    
+    if digits:
+        num_id = digits[0]
+    else:
+        # Secure safety net fallback matching items sequentially: Reward1, Reward2...
         num_id = str(index_fallback + 1)
         
     github_user = "joyb02-repo"
@@ -93,11 +98,11 @@ def determine_asset_filename(reward_key, index_fallback):
 STORE_ITEMS = []
 for idx, item in enumerate(dynamic_catalog):
     STORE_ITEMS.append({
-        "id": item["reward_key"], 
-        "title": item["title"],
-        "cost": item["cost"],
-        "desc": item["description"],
-        "img_filename": determine_asset_filename(item["reward_key"], idx)
+        "id": item.get("reward_key", f"fallback_{idx}"), 
+        "title": item.get("title", "Unknown Reward"),
+        "cost": item.get("cost", 0),
+        "desc": item.get("description", ""),
+        "img_filename": determine_asset_filename(item.get("reward_key", ""), idx)
     })
 
 items_json = json.dumps(STORE_ITEMS)
@@ -224,7 +229,9 @@ html_store_template = """
             totalCount += cart[itemId];
             if (cart[itemId] > 0) {
                 const item = itemCatalog.find(i => i.id === itemId);
-                totalPoints += (item.cost * cart[itemId]);
+                if(item) {
+                    totalPoints += (item.cost * cart[itemId]);
+                }
             }
         }
         document.getElementById("basketCheckoutBtn").disabled = (totalCount === 0);
@@ -237,7 +244,9 @@ html_store_template = """
         for (let itemId in cart) {
             if (cart[itemId] > 0) {
                 const item = itemCatalog.find(i => i.id === itemId);
-                container.innerHTML += `<div class="summary-row"><span>${item.title}</span><strong>x${cart[itemId]} (${item.cost * cart[itemId]} PTS)</strong></div>`;
+                if(item) {
+                    container.innerHTML += `<div class="summary-row"><span>${item.title}</span><strong>x${cart[itemId]} (${item.cost * cart[itemId]} PTS)</strong></div>`;
+                }
             }
         }
         buildBarterInventoryList();
@@ -275,7 +284,10 @@ html_store_template = """
     function recalculateBarterMath() {
         let totalCost = 0;
         for (let itemId in cart) {
-            if (cart[itemId] > 0) { totalCost += (itemCatalog.find(i => i.id === itemId).cost * cart[itemId]); }
+            if (cart[itemId] > 0) { 
+                const item = itemCatalog.find(i => i.id === itemId);
+                if(item) { totalCost += (item.cost * cart[itemId]); }
+            }
         }
         let totalBarter = 0;
         document.querySelectorAll(".barter-select").forEach(sel => {
@@ -307,7 +319,7 @@ html_store_template = """
         for (let key in cart) {
             if (cart[key] > 0) {
                 finalBasketItems[key] = cart[key];
-                let cleanedKey = key.replace(/\s+/g, '');
+                let cleanedKey = String(key).replace(/\s+/g, '');
                 finalBasketItems[cleanedKey] = cart[key];
             }
         }
