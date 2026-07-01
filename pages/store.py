@@ -1,6 +1,6 @@
 # ====================================================================
 # PROJECT: TIMBER MEDALLION PORTFOLIO SYSTEM
-# FILE: pages/store.py (DYNAMIC POINTS REWARDS CATALOG)
+# FILE: pages/store.py (DYNAMIC POINTS REWARDS CATALOG WITH PATH LOGGING)
 # ====================================================================
 
 import streamlit as st
@@ -76,18 +76,14 @@ live_data, live_inventory, summary_value, summary_collected, dynamic_catalog = f
 
 def determine_asset_filename(reward_key, index_fallback):
     """
-    Tries to grab numeric values safely. If anything fails or formats weirdly, 
-    it falls back cleanly to the layout grid sequence number (index_fallback + 1).
+    Extracts numerical content cleanly or utilizes explicit grid step sizing fallbacks.
     """
     raw_str = str(reward_key).strip().lower()
-    
-    # Extract only clean numerical digits from string if possible
     digits = re.findall(r'\d+', raw_str)
     
     if digits:
         num_id = digits[0]
     else:
-        # Secure safety net fallback matching items sequentially: Reward1, Reward2...
         num_id = str(index_fallback + 1)
         
     github_user = "joyb02-repo"
@@ -129,9 +125,12 @@ html_store_template = """
     .store-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%; box-sizing: border-box; padding: 0 10px; margin-bottom: 35px; }
     .store-card { background: #161925; border: 1px solid #23273A; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: space-between; }
     
-    .item-image-frame { width: 100%; height: 140px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; background: #0E1117; border-radius: 6px; overflow: hidden; border: 1px solid #1E2235; }
+    .item-image-frame { width: 100%; height: 140px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px; background: #0E1117; border-radius: 6px; overflow: hidden; border: 1px solid #1E2235; }
     .item-image-frame img { height: 100%; width: 100%; object-fit: cover; }
     
+    /* 🛠️ LIVE TROUBLESHOOTING LABEL DISPLAY STYLE */
+    .path-debug-text { font-size: 10px; color: #E53E3E; background: rgba(0,0,0,0.4); width: 100%; word-break: break-all; padding: 4px; border-radius: 4px; margin-bottom: 12px; font-family: monospace; text-align: left; }
+
     .item-title { font-size: 15px; font-weight: 700; color: #FFFFFF; margin-bottom: 6px; }
     .item-desc { font-size: 12px; color: rgba(255, 255, 255, 0.4); line-height: 1.4; margin-bottom: 15px; min-height: 34px; }
     .item-cost-badge { font-size: 13px; font-weight: 700; color: #10B981; margin-bottom: 15px; }
@@ -229,9 +228,7 @@ html_store_template = """
             totalCount += cart[itemId];
             if (cart[itemId] > 0) {
                 const item = itemCatalog.find(i => i.id === itemId);
-                if(item) {
-                    totalPoints += (item.cost * cart[itemId]);
-                }
+                if(item) { totalPoints += (item.cost * cart[itemId]); }
             }
         }
         document.getElementById("basketCheckoutBtn").disabled = (totalCount === 0);
@@ -350,6 +347,7 @@ CARD_TEMPLATE = """
         <div class="item-image-frame">
             <img src="__IMG__" />
         </div>
+        <div class="path-debug-text">Path: __IMG__</div>
         <div class="item-title">__TITLE__</div>
         <div class="item-desc">__DESC__</div>
     </div>
@@ -386,4 +384,4 @@ html_store_elements = html_store_elements.replace("__MEDALLIONS_JSON__", medalli
 html_store_elements = html_store_elements.replace("__PASSCODE_RAW__", user_passcode)
 html_store_elements = html_store_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
 
-st.components.v1.html(html_store_elements, height=1050, scrolling=True)
+st.components.v1.html(html_store_elements, height=1250, scrolling=True)
