@@ -1,20 +1,21 @@
 # ====================================================================
 # PROJECT: TIMBER MEDALLION PORTFOLIO SYSTEM
-# FILE: pages/store.py (DYNAMIC POINTS REWARDS CATALOG)
+# FILE: pages/dashboard.py (MOBILE RESPONSIVE MODAL ENGINE)
 # ====================================================================
 
 import streamlit as st
 import requests
-import json
 import os
-import re
 import base64
+import json
 
+# Security Wall: Redirect if not authenticated via root login file
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
     st.switch_page("login.py")
 
-st.set_page_config(page_title="Timber Reward Store", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Timber Medallion Portfolio", layout="wide", initial_sidebar_state="collapsed")
 
+# 🎯 HORIZONTAL OPPOSITE-ALIGNMENT ENGINE: Forces buttons onto a single level, spread across the page edges
 st.markdown("""
 <style>
     .stApp {
@@ -24,9 +25,30 @@ st.markdown("""
         background-size: 24px 24px;
     }
     header, [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; visibility: hidden; height: 0px; }
-    div.block-container { padding-top: 20px !important; padding-bottom: 100px !important; }
     
-    div.stButton > button[key="sys_back_dashboard_btn"] {
+    /* Fixed container bounding rules */
+    div.block-container { padding-top: 20px !important; padding-bottom: 20px !important; }
+    
+    /* 🛠️ ROW SPLIT SYSTEM: Packs parent structural blocks into a space-between flex row layout */
+    [data-testid="stVerticalBlock"] > div:has(div button[key="sys_refresh_btn"]) {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        margin: 0 auto !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Keep individual container blocks clean and prevent native block line breaks */
+    div[data-testid="element-container"]:has(button[key="sys_refresh_btn"]),
+    div[data-testid="element-container"]:has(button[key="sys_route_store_btn"]) {
+        display: inline-flex !important;
+        width: auto !important;
+    }
+
+    /* 🔄 UPDATE DATA BUTTON - Fixed on Left Side */
+    div.stButton > button[key="sys_refresh_btn"] {
         background-color: #161925 !important;
         border: 1px solid #23273A !important;
         color: #E2E8F0 !important;
@@ -34,31 +56,82 @@ st.markdown("""
         border-radius: 6px !important;
         padding: 0.45rem 1.5rem !important;
         width: 240px !important;
+        transition: all 0.2s ease !important;
+        margin: 0 !important;
     }
-    div.stButton > button[key="sys_back_dashboard_btn"]:hover {
+    div.stButton > button[key="sys_refresh_btn"]:hover {
         background-color: #23273A !important;
         border-color: #718096 !important;
         color: #FFF !important;
     }
+
+    /* 🛒 VISIT STORE BUTTON - Fixed on Right Side */
+    div.stButton > button[key="sys_route_store_btn"] {
+        background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 0.5rem 2rem !important;
+        width: 240px !important;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        margin: 0 !important;
+    }
+    div.stButton > button[key="sys_route_store_btn"]:hover {
+        background: linear-gradient(135deg, #34D399 0%, #10B981 100%) !important;
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4) !important;
+    }
+
+    /* Mobile Responsive adjustments for native top buttons */
+    @media (max-width: 768px) {
+        [data-testid="stVerticalBlock"] > div:has(div button[key="sys_refresh_btn"]) {
+            flex-direction: column !important;
+            gap: 10px !important;
+        }
+        div.stButton > button[key="sys_refresh_btn"], 
+        div.stButton > button[key="sys_route_store_btn"] {
+            width: 100% !important;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# 🔄 NATIVE REFRESH ACTUATOR TRIGGER
-if st.button("Refresh Cache Data 🔄", key="sys_store_internal_refresh"):
+API_URL = st.secrets["API_URL"]
+
+MEDALLION_COLUMNS = [
+    "Spruce", "Pine", "Meranti", "Balsa", "Oak", "Maple", 
+    "Walnut", "Cherry", "Mahogany", "Ebony", "Rosewood", "Agarwood"
+]
+
+LABEL_MAPPING = {
+    "Spruce": "SPRC", "Pine": "PINE", "Meranti": "MRNT", "Balsa": "BALS",
+    "Oak": "OAKW", "Maple": "MAPL", "Walnut": "WALN", "Cherry": "CHER",
+    "Mahogany": "MHGN", "Ebony": "EBNY", "Rosewood": "RSWD", "Agarwood": "AGAR"
+}
+
+# ====================================================================
+# SYSTEM BACKEND PROCESSORS - TOP LEVEL ACTIONS
+# ====================================================================
+
+if st.button("Update Data 🔄", key="sys_refresh_btn"):
     st.cache_data.clear()
     st.rerun()
 
-if st.button("Back to Portfolio ↩️", key="sys_back_dashboard_btn"):
-    st.switch_page("pages/dashboard.py")
+if st.button("Visit Store 🛒", key="sys_route_store_btn"):
+    st.switch_page("pages/store.py")
 
-API_URL = st.secrets["API_URL"]
-user_passcode = st.session_state.get("user_passcode", "DEFAULT_DEMO_KEY")
 
-if "store_refresh_token" not in st.session_state:
-    st.session_state["store_refresh_token"] = 0
+def get_image_base64(path):
+    if os.path.exists(path):
+        with open(path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode()
+    return None
 
 @st.cache_data(ttl=10)
-def fetch_sheet_records(passcode, refresh_trigger):
+def fetch_sheet_records(passcode):
     try:
         r = requests.get(API_URL, params={"action": "fetchData", "passcode": passcode}, timeout=15)
         if r.status_code == 200:
@@ -66,463 +139,320 @@ def fetch_sheet_records(passcode, refresh_trigger):
             if d.get("status") == "success":
                 m_map = {str(m.get("Medallion", "")).strip().lower(): m for m in d.get("medallions", [])}
                 summary = d.get("master_summary", {})
-                catalog = d.get("catalog", [])
-                return m_map, summary.get("Inventory", {}), summary.get("CollectionValue", "0 PTS"), summary.get("MedallionsCollected", "0"), catalog
+                return m_map, summary.get("Inventory", {}), summary.get("CollectionValue", "0"), summary.get("MedallionsCollected", "0")
     except: pass
-    return {}, {}, "0 PTS", "0", []
+    return {}, {}, "0", "0"
 
-live_data, live_inventory, summary_value, summary_collected, dynamic_catalog = fetch_sheet_records(
-    user_passcode, st.session_state["store_refresh_token"]
-)
+user_passcode = st.session_state.get("user_passcode", "DEFAULT_DEMO_KEY")
+username_display = st.session_state.get("username", "OPERATOR").upper()
 
-def get_local_image_base64(reward_key, index_fallback):
-    """
-    Reads image directly from your project's local assets/ directory,
-    converts it to base64 data, eliminating GitHub 404 URL case-sensitivity issues completely.
-    """
-    raw_str = str(reward_key).strip().lower()
-    digits = re.findall(r'\d+', raw_str)
-    num_id = digits[0] if digits else str(index_fallback + 1)
+live_data, live_inventory, summary_value, summary_collected = fetch_sheet_records(user_passcode)
+summary_value = str(summary_value).strip()
 
-    # Check common extensions/casings so renames between jpg/png don't silently break images
-    local_paths = [
-        (os.path.join("assets", f"Reward{num_id}.png"), "png"),
-        (os.path.join("assets", f"Reward{num_id}.PNG"), "png"),
-        (os.path.join("assets", f"Reward{num_id}.jpg"), "jpeg"),
-        (os.path.join("assets", f"Reward{num_id}.JPG"), "jpeg"),
-        (os.path.join("assets", f"Reward{num_id}.jpeg"), "jpeg"),
-    ]
+asset_map_js = "{"
+for wood in MEDALLION_COLUMNS:
+    b64 = get_image_base64(f"assets/{wood.lower()}.png")
+    if b64: asset_map_js += f"'{wood}': 'data:image/png;base64,{b64}',"
+asset_map_js += "}"
 
-    for path, mime in local_paths:
-        if os.path.exists(path):
-            try:
-                with open(path, "rb") as image_file:
-                    encoded_string = base64.b64encode(image_file.read()).decode()
-                return f"data:image/{mime};base64,{encoded_string}"
-            except Exception:
-                pass
+js_pool_items = []
+js_pool_weights = []
+for wood_name in MEDALLION_COLUMNS:
+    lookup_key = wood_name.strip().lower()
+    sheet_row = live_data.get(lookup_key, None)
+    weight_value = 1.0
+    if sheet_row and "Probability" in sheet_row:
+        prob_str = str(sheet_row["Probability"]).replace("%", "").strip()
+        try: weight_value = float(prob_str)
+        except ValueError: weight_value = 1.0
+    js_pool_items.append(wood_name)
+    js_pool_weights.append(weight_value)
 
-    # Safe placeholder background if file is physically missing from the directory
-    return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100%' height='100%' fill='%231E2235'/></svg>"
-
-STORE_ITEMS = []
-for idx, item in enumerate(dynamic_catalog):
-    STORE_ITEMS.append({
-        "id": item.get("reward_key", f"fallback_{idx}"), 
-        "title": item.get("title", "Unknown Reward"),
-        "cost": item.get("cost", 0),
-        "desc": item.get("description", ""),
-        "img_base64": get_local_image_base64(item.get("reward_key", ""), idx)
-    })
-
-items_json = json.dumps(STORE_ITEMS)
-inventory_json = json.dumps({k: int(v) for k, v in live_inventory.items() if int(v) > 0})
-
-medallion_details = {}
-for k, v in live_data.items():
-    medallion_details[k] = {"name": v.get("Medallion", k.capitalize()), "value": int(v.get("Value", 0))}
-medallions_json = json.dumps(medallion_details)
-
-html_store_template = """
+html_base_template = """
 <style>
     body { margin: 0; padding: 0; background: transparent; font-family: 'Inter', sans-serif; color: #FFFFFF; }
-    .store-header-wrapper { width: 100%; text-align: center; margin-bottom: 25px; box-sizing: border-box; padding: 0 10px; }
-    .store-title { font-size: 26px; font-weight: 700; color: #FFFFFF; margin-bottom: 10px; letter-spacing: -0.5px; }
-    .store-title span { color: #10B981; }
-    .store-intro { max-width: 850px; margin: 0 auto; font-size: 13.5px; line-height: 1.6; color: rgba(255, 255, 255, 0.4); }
+    .header-wrapper { width: 100%; text-align: center; margin-bottom: 25px; box-sizing: border-box; padding: 0 10px; }
+    
+    .portfolio-title { font-size: 26px; font-weight: 700; color: #FFFFFF; margin-bottom: 10px; letter-spacing: -0.5px; }
+    .portfolio-title span.user-accent { color: #F4D068; }
+    .portfolio-intro { max-width: 850px; margin: 0 auto; font-size: 13.5px; line-height: 1.6; color: rgba(255, 255, 255, 0.4); }
+    .portfolio-intro span { color: rgba(244, 208, 104, 0.9); font-weight: 600; }
+    
+    /* 🎴 FLEXIBLE GRID MATRIX */
+    .casement-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; margin-bottom: 30px; width: 100%; box-sizing: border-box; }
+    .grid-node { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .image-frame { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+    .image-frame img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.15s ease-in-out; }
+    .lock-node { width: 52px; height: 52px; border-radius: 50%; border: 2px dashed #23273A; background: #161925; display: flex; align-items: center; justify-content: center; color: #3D4563; font-size: 11px; }
+    .grid-node:hover .image-frame img { transform: scale(1.15); }
+    .quantity-badge { font-size: 12px; font-weight: 700; color: #F4D068; margin-bottom: 3px; min-height: 15px; }
+    .label-badge { font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .node-tooltip { 
+        visibility: hidden; opacity: 0; position: absolute; top: -115px; left: 50%; 
+        transform: translateX(-50%); width: 150px; background: #161925; border: 1px solid #282E48; 
+        border-radius: 8px; padding: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); 
+        z-index: 9999999 !important; transition: opacity 0.12s ease-in-out; pointer-events: none; 
+    }
+    .grid-node:hover .node-tooltip { visibility: visible; opacity: 1; }
 
-    .dashboard-row { display: flex; justify-content: center; gap: 20px; margin-bottom: 30px; padding: 0 10px; }
+    /* Keep the tooltip from clipping off-screen for the leftmost/rightmost nodes in the row */
+    .grid-node:first-child .node-tooltip { left: 0; transform: translateX(0); }
+    .grid-node:last-child .node-tooltip { left: auto; right: 0; transform: translateX(0); }
+    
+    .tip-line { font-size: 11px; color: #E2E8F0; margin-bottom: 4px; text-align: left; white-space: nowrap; }
+    .tip-line span { font-weight: 700; color: #F4D068; }
+    .tip-line span.rarity-common { color: #CD7F32; }       
+    .tip-line span.rarity-uncommon { color: #C0C0C0; }     
+    .tip-line span.rarity-rare { color: #3b82f6; }         
+    .tip-line span.rarity-epic { color: #a855f7; }         
+    .tip-line span.rarity-legendary { color: #f59e0b; }    
+    
+    .dashboard-row { display: flex; justify-content: center; gap: 20px; margin-bottom: 35px; padding: 0 10px; }
     .stat-card { background: #161925; border: 1px solid #23273A; border-radius: 6px; padding: 12px 24px; min-width: 190px; text-align: center; flex: 1; max-width: 240px; }
     .stat-label { font-size: 11px; text-transform: uppercase; color: #718096; margin-bottom: 4px; letter-spacing: 0.5px; }
     .stat-value { font-size: 20px; font-weight: 700; color: #F4D068; }
-
-    .store-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%; box-sizing: border-box; padding: 0 10px; margin-bottom: 35px; }
-    .store-card { background: #161925; border: 1px solid #23273A; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: space-between; }
     
-    .item-image-frame { width: 100%; height: 140px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; background: #0E1117; border-radius: 6px; overflow: hidden; border: 1px solid #1E2235; }
-    .item-image-frame img { height: 100%; width: 100%; object-fit: cover; }
+    .action-container { display: flex; flex-direction: column; align-items: center; width: 100%; padding: 0 10px; box-sizing: border-box; }
+    .pin-auth-wrapper { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; width: 100%; max-width: 424px; }
+    .pin-input { width: 160px; height: 40px; background: #161925; border: 1px solid #23273A; border-radius: 6px; color: #FFF; text-align: center; font-size: 14px; font-weight: 600; outline: none; flex-grow: 1; }
+    .pin-verify-btn { padding: 0 20px; height: 40px; background: #23273A; border: none; border-radius: 6px; color: #E2E8F0; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
+    .pin-feedback-msg { font-size: 11px; font-weight: 600; margin-bottom: 10px; height: 14px; }
     
-    .item-title { font-size: 15px; font-weight: 700; color: #FFFFFF; margin-bottom: 6px; }
-    .item-desc { font-size: 12px; color: rgba(255, 255, 255, 0.4); line-height: 1.4; margin-bottom: 15px; min-height: 34px; }
-    .item-cost-badge { font-size: 13px; font-weight: 700; color: #10B981; margin-bottom: 15px; }
-    
-    .qty-container { display: flex; align-items: center; gap: 12px; background: #0E1117; border: 1px solid #23273A; border-radius: 6px; padding: 4px 10px; margin-bottom: 5px; }
-    .qty-btn { background: transparent; border: none; color: #718096; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0 6px; user-select: none; }
-    .qty-btn:hover { color: #FFF; }
-    .qty-display { font-size: 14px; font-weight: 700; color: #FFF; min-width: 20px; text-align: center; }
+    .mine-button { width: 424px; max-width: 100%; height: 48px; background-color: #F4D068; border: none; border-radius: 6px; color: #0E1117; font-size: 14px; font-weight: 700; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 15px rgba(244, 208, 104, 0.2); }
+    .mine-button:disabled { opacity: 0.35; cursor: not-allowed; background-color: #161925 !important; color: #3D4563 !important; border: 1px solid #23273A; box-shadow: none !important; }
 
-    /* Original in-component floating bar is kept as a fallback for cross-origin edge cases,
-       but is hidden by default once the parent-window bar is successfully mounted. */
-    .floating-checkout-anchor { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(22, 25, 37, 0.96); backdrop-filter: blur(10px); border-top: 1px solid #23273A; padding: 14px 20px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; z-index: 9999; box-shadow: 0 -10px 35px rgba(0,0,0,0.6); }
-    .checkout-trigger-btn { width: 460px; max-width: 100%; height: 46px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: none; border-radius: 6px; color: #FFF; font-size: 13px; font-weight: 700; text-transform: uppercase; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 12px; }
-    .checkout-trigger-btn:disabled { opacity: 0.35; cursor: not-allowed; background: #161925; box-shadow: none; border: 1px solid #23273A; }
-    .basket-tally-pill { background: rgba(255, 255, 255, 0.18); padding: 3px 9px; border-radius: 4px; font-size: 11px; font-weight: 800; color: #FFF; }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(14, 17, 23, 0.85); backdrop-filter: blur(4px); display: none; align-items: flex-start; justify-content: center; z-index: 999999; padding-top: 60px; }
+    .modal-box { background: #0E1117; border: 1px solid #23273A; border-radius: 12px; width: 320px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.7); display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .modal-subheading { font-size: 13px; font-weight: 500; color: rgba(255, 255, 255, 0.6); margin-bottom: 16px; }
+    .spin-box { width: 140px; height: 140px; border-radius: 12px; background: #161925; border: 3px solid #23273A; display: flex; align-items: center; justify-content: center; }
+    .spin-box img { width: 88%; height: 88%; object-fit: contain; }
+    .outcome-text-wrapper { margin-top: 15px; height: 35px; opacity: 0; }
+    .outcome-bottom { font-size: 18px; font-weight: 800; color: #F4D068; }
+    .claim-button { margin-top: 14px; width: 160px; height: 32px; background-color: transparent; border: 2px solid #F4D068; border-radius: 4px; color: #F4D068; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; opacity: 0; transform: translateY(5px); }
+    .claim-button.visible { opacity: 1 !important; transform: translateY(0) !important; }
 
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(14, 17, 23, 0.94); backdrop-filter: blur(6px); display: none; align-items: flex-start; justify-content: center; z-index: 99999; padding-top: 30px; overflow-y: auto; box-sizing: border-box; }
-    .modal-box { background: #0E1117; border: 1px solid #23273A; border-radius: 12px; width: 520px; max-width: 95%; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); box-sizing: border-box; margin-bottom: 50px; }
-    .modal-title { font-size: 19px; font-weight: 700; color: #FFF; margin-bottom: 15px; text-align: center; }
-    
-    .summary-section { background: #161925; border: 1px solid #23273A; border-radius: 6px; padding: 14px; margin-bottom: 20px; text-align: left; }
-    .summary-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 8px; }
-    
-    .inventory-barter-list { max-height: 180px; overflow-y: auto; text-align: left; margin-bottom: 20px; background: #0E1117; border: 1px solid #23273A; border-radius: 6px; padding: 6px; }
-    .barter-item-row { display: flex; align-items: center; justify-content: space-between; padding: 8px; border-bottom: 1px solid #161925; }
-    .barter-label-group { display: flex; flex-direction: column; }
-    .barter-title { font-size: 13px; font-weight: 600; color: #FFF; }
-    .barter-meta { font-size: 11px; color: #718096; }
-    .barter-select { background: #161925; border: 1px solid #23273A; color: #FFF; border-radius: 4px; padding: 4px; font-size: 12px; outline: none; }
+    /* 📱 ADAPTIVE MOBILE ENGINE (Triggered when screen width is under 768px) */
+    @media (max-width: 768px) {
+        .portfolio-title { font-size: 5.5vw; }
+        .portfolio-intro { font-size: 12px; line-height: 1.5; text-align: justify; }
+        
+        /* 🛠️ Forces exactly 4 medallions wide per row (3 total rows for 12 items) */
+        .casement-grid { grid-template-columns: repeat(4, 1fr); gap: 10px 6px; }
+        .image-frame { width: 50px; height: 50px; }
+        .lock-node { width: 44px; height: 44px; font-size: 10px; }
+        .quantity-badge { font-size: 11px; }
+        .label-badge { font-size: 9px; }
 
-    .claim-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
-    .claim-label-group { display: flex; flex-direction: column; text-align: left; }
-    .claim-title { font-size: 13px; color: rgba(255,255,255,0.85); font-weight: 600; }
-    .claim-subtotal { font-size: 11px; color: #718096; }
-    .claim-qty-controls { display: flex; align-items: center; gap: 10px; background: #0E1117; border: 1px solid #23273A; border-radius: 6px; padding: 3px 8px; }
-    .claim-qty-btn { background: transparent; border: none; color: #718096; font-size: 15px; font-weight: bold; cursor: pointer; padding: 0 5px; user-select: none; }
-    .claim-qty-btn:hover { color: #FFF; }
-    .claim-qty-val { font-size: 13px; font-weight: 700; color: #FFF; min-width: 16px; text-align: center; }
-    .wasted-row span:last-child { color: #EF4444 !important; }
-
-    .error-log-banner { color: #EF4444; font-size: 12px; font-weight: 600; min-height: 18px; margin-bottom: 15px; text-align: center; }
-    .finalize-btn { width: 100%; height: 44px; background: #F4D068; color: #0E1117; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
-    .finalize-btn:disabled { background: #161925 !important; color: #3D4563 !important; border: 1px solid #23273A; cursor: not-allowed; }
-    .close-modal-link { color: #718096; font-size: 12px; margin-top: 14px; display: inline-block; cursor: pointer; text-decoration: underline; }
-    @media (max-width: 992px) { .store-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 600px) { .store-grid { grid-template-columns: repeat(1, 1fr); } }
+        .dashboard-row { gap: 10px; margin-bottom: 25px; }
+        .stat-card { min-width: 0; padding: 10px; }
+        .stat-value { font-size: 16px; }
+        
+        /* Flips tooltip placement for edge items on mobile interfaces */
+        .grid-node:nth-child(4n) .node-tooltip { left: auto; right: 0; transform: translateX(0); }
+        .grid-node:nth-child(4n+1) .node-tooltip { left: 0; transform: translateX(0); }
+    }
 </style>
 
-<div class="store-header-wrapper">
-    <div class="store-title">Timber Reward <span>Store</span></div>
-    <div class="store-intro">Exchange your earned portfolio asset values for real-world rewards.</div>
+<div class="header-wrapper">
+    <div class="portfolio-title">Timber Medallion Portfolio: <span class="user-accent">__USERNAME_UPPER__</span></div>
+    <div class="portfolio-intro">
+        Master tracking dashboard connected live to cloud inventory matrices. Authenticated users can generate verified asset transactions by supplying validation tokens below. Hover over any node in your matrix layout to see real-time supply indexes, market valuations, and algorithm probabilities. Premium tier tokens scale up to the highly coveted, single production run <span>Agarwood Medallion</span>.
+    </div>
 </div>
+
+<div class="casement-grid">__GRID_ITEMS_PLACEHOLDER__</div>
 
 <div class="dashboard-row">
-    <div class="stat-card"><div class="stat-label">Portfolio Balance</div><div class="stat-value">__VALUE_PLACEHOLDER__</div></div>
-    <div class="stat-card"><div class="stat-label">Total Medallions</div><div class="stat-value">__COLLECTED_PLACEHOLDER__</div></div>
+    <div class="stat-card"><div class="stat-label">Collection Value</div><div class="stat-value">__VALUE_PLACEHOLDER__</div></div>
+    <div class="stat-card"><div class="stat-label">Medallions Collected</div><div class="stat-value">__COLLECTED_PLACEHOLDER__</div></div>
 </div>
 
-<div class="store-grid">__STORE_ITEMS_PLACEHOLDER__</div>
-
-<div class="floating-checkout-anchor" id="fallbackCheckoutAnchor">
-    <button class="checkout-trigger-btn" id="basketCheckoutBtn" disabled onclick="openCheckoutBale()">
-        <span>Open Verification Checkout</span>
-        <span class="basket-tally-pill" id="floatingTallyPill">0 PTS</span>
-    </button>
+<div class="action-container">
+    <div class="pin-auth-wrapper">
+        <input class="pin-input" type="text" id="pinField" placeholder="6-DIGIT PIN" maxlength="6" />
+        <button class="pin-verify-btn" id="verifyBtn" onclick="evaluatePinAuthorization()">Verify PIN</button>
+    </div>
+    <div class="pin-feedback-msg" id="feedbackMsg" style="color: #718096;"></div>
+    <button class="mine-button" id="mineBtn" disabled onclick="openMiningModal()">Mine a Medallion</button>
 </div>
 
-<div class="modal-overlay" id="checkoutModal">
+<div class="modal-overlay" id="miningModal">
     <div class="modal-box">
-        <div class="modal-title">Verify Trade Voucher</div>
-        <div style="text-align:left; font-size:12px; font-weight:700; color:#718096; text-transform:uppercase; margin-bottom:8px;">Review Claims:</div>
-        <div class="summary-section" id="cartSummaryContainer"></div>
-        
-        <div style="text-align:left; font-size:12px; font-weight:700; color:#718096; text-transform:uppercase; margin-bottom:8px;">Select Medallions to Exchange (Barter Coverage):</div>
-        <div class="inventory-barter-list" id="barterListDom"></div>
-        
-        <div class="summary-section">
-            <div class="summary-row"><span>Total Cart Cost:</span><span id="labelSummaryCost" style="font-weight:700;">0 PTS</span></div>
-            <div class="summary-row"><span>Exchanged Barter Value:</span><span id="labelSummaryBarter" style="color:#F4D068; font-weight:700;">0 PTS</span></div>
-            <div class="summary-row wasted-row"><span>Medallion Value Wasted:</span><span id="labelSummaryWasted" style="font-weight:700;">0 PTS</span></div>
+        <div class="modal-subheading">Medallion Mining in Process...</div>
+        <div class="spin-box" id="cyclerBox"><img id="cyclerImg" src="" /></div>
+        <div class="outcome-text-wrapper" id="outcomeWrapper">
+            <div style="font-size:11px; color:#718096; text-transform:uppercase; letter-spacing:1px;">Successfully Mined:</div>
+            <div class="outcome-bottom" id="itemNameTxt"></div>
         </div>
-
-        <div class="error-log-banner" id="checkoutErrLog"></div>
-        <button class="finalize-btn" id="finalTradeBtn" disabled onclick="executeFinalTransaction()">Finalise Trade Voucher</button>
-        <div class="close-modal-link" onclick="closeCheckoutBale()">Back to Store Grid</div>
+        <button class="claim-button" id="claimBtn" onclick="commitClaimToSheets()">Claim Medallion</button>
     </div>
 </div>
 
 <script>
-    const itemCatalog = __CATALOG_JSON__;
-    const userInventory = __INVENTORY_JSON__;
-    const medallionMetadata = __MEDALLIONS_JSON__;
+    // 🧹 CLEANUP: Remove any screen-locked checkout bar that the Store page injected
+    // into the parent window. Since Streamlit's page navigation doesn't always do a
+    // full browser reload, an element mounted onto window.parent.document by another
+    // page can otherwise linger here even though this page has nothing to check out.
+    (function cleanupForeignCheckoutBar() {
+        try {
+            const parentDoc = window.parent.document;
+            const foreignBar = parentDoc.getElementById("timberCheckoutBar");
+            if (foreignBar) foreignBar.remove();
+        } catch (e) { /* cross-origin restriction: nothing to clean up from here */ }
+    })();
+
+    const assetLibrary = __ASSET_MAP_PLACEHOLDER__;
+    const pool = __POOL_ITEMS_PLACEHOLDER__;
+    const weights = __POOL_WEIGHTS_PLACEHOLDER__;
     const endpoint = "__API_URL_PLACEHOLDER__";
-    
-    let cart = {};
+    let selectedItem = "";
 
-    function updateItemQuantity(itemId, adjustment) {
-        if (!cart[itemId]) cart[itemId] = 0;
-        cart[itemId] = Math.max(0, cart[itemId] + adjustment);
-        document.getElementById("qty_val_" + itemId).innerText = cart[itemId];
-        evaluateBasketStatus();
+    async function evaluatePinAuthorization() {
+        const pinValue = document.getElementById("pinField").value.trim();
+        const feedback = document.getElementById("feedbackMsg");
+        const verifyBtn = document.getElementById("verifyBtn");
+        if (pinValue.length < 4) return;
+        try {
+            const response = await fetch(endpoint + "?action=verifyPin&pin=" + encodeURIComponent(pinValue));
+            const result = await response.json();
+            if (result.status === "success") {
+                feedback.style.color = "#10b981"; feedback.innerText = "Access granted!";
+                document.getElementById("pinField").disabled = true; verifyBtn.style.display = "none";
+                document.getElementById("mineBtn").disabled = false;
+            } else {
+                feedback.style.color = "#ef4444"; feedback.innerText = "Invalid code key verification.";
+            }
+        } catch(e) {}
     }
 
-    function evaluateBasketStatus() {
-        let totalCount = 0;
-        let totalPoints = 0;
-        for (let itemId in cart) { 
-            totalCount += cart[itemId];
-            if (cart[itemId] > 0) {
-                const item = itemCatalog.find(i => i.id === itemId);
-                if(item) { totalPoints += (item.cost * cart[itemId]); }
+    function selectWeightedWinner(items, itemWeights) {
+        const totalWeight = itemWeights.reduce((acc, w) => acc + w, 0);
+        const randomNum = Math.random() * totalWeight;
+        let runningSum = 0;
+        for (let i = 0; i < items.length; i++) {
+            runningSum += itemWeights[i];
+            if (randomNum <= runningSum) return items[i];
+        }
+        return items[items.length - 1];
+    }
+
+    function openMiningModal() {
+        document.getElementById("miningModal").style.display = "flex";
+        runMiningSequence();
+    }
+
+    function runMiningSequence() {
+        const img = document.getElementById('cyclerImg');
+        const wrapper = document.getElementById('outcomeWrapper'); 
+        const itemTxt = document.getElementById('itemNameTxt'); 
+        const claimBtn = document.getElementById('claimBtn');
+        wrapper.style.opacity = "0"; 
+        claimBtn.classList.remove('visible');
+        let counter = 0; let speed = 40; 
+        selectedItem = selectWeightedWinner(pool, weights);
+        function cycle() {
+            const currentItem = pool[counter % pool.length]; 
+            if (assetLibrary[currentItem]) img.src = assetLibrary[currentItem]; 
+            counter++;
+            if (speed < 320) { 
+                speed += 16; 
+                setTimeout(cycle, speed); 
+            } else {
+                img.src = assetLibrary[selectedItem];
+                itemTxt.innerText = selectedItem.toUpperCase() + "!"; 
+                wrapper.style.opacity = "1"; 
+                claimBtn.classList.add('visible');
             }
         }
-        document.getElementById("basketCheckoutBtn").disabled = (totalCount === 0);
-        document.getElementById("floatingTallyPill").innerText = totalPoints + " PTS";
-
-        // Mirror state onto the screen-locked bar mounted in the parent window (if available)
-        if (window.__timberBtn && window.__timberPill && window.__timberBar) {
-            window.__timberBtn.disabled = (totalCount === 0);
-            window.__timberPill.innerText = totalPoints + " PTS";
-            window.__timberBar.classList.toggle("visible", totalCount > 0);
-        }
+        setTimeout(cycle, speed);
     }
 
-    function renderCartSummary() {
-        const container = document.getElementById("cartSummaryContainer");
-        container.innerHTML = "";
-        let anyItems = false;
-        for (let itemId in cart) {
-            if (cart[itemId] > 0) {
-                anyItems = true;
-                const item = itemCatalog.find(i => i.id === itemId);
-                if(item) {
-                    container.innerHTML += `
-                        <div class="claim-row">
-                            <div class="claim-label-group">
-                                <span class="claim-title">${item.title}</span>
-                                <span class="claim-subtotal">${item.cost} PTS each &middot; ${item.cost * cart[itemId]} PTS subtotal</span>
-                            </div>
-                            <div class="claim-qty-controls">
-                                <button class="claim-qty-btn" onclick="updateCartQuantityInCheckout('${itemId}', -1)">-</button>
-                                <span class="claim-qty-val">${cart[itemId]}</span>
-                                <button class="claim-qty-btn" onclick="updateCartQuantityInCheckout('${itemId}', 1)">+</button>
-                            </div>
-                        </div>`;
-                }
-            }
-        }
-        if (!anyItems) {
-            container.innerHTML = '<div style="padding:10px 0; text-align:center; color:#718096;">Your basket is empty.</div>';
-        }
-    }
-
-    // Lets the user adjust quantities directly inside the "Review Claims" section
-    // without leaving the checkout modal. Keeps the store-grid counters, the
-    // checkout bar, and the barter math all in sync with the change.
-    function updateCartQuantityInCheckout(itemId, adjustment) {
-        if (!cart[itemId]) cart[itemId] = 0;
-        cart[itemId] = Math.max(0, cart[itemId] + adjustment);
-
-        // Keep the quantity stepper on the underlying store card in sync
-        const gridQtyEl = document.getElementById("qty_val_" + itemId);
-        if (gridQtyEl) gridQtyEl.innerText = cart[itemId];
-
-        evaluateBasketStatus();
-        renderCartSummary();
-        recalculateBarterMath();
-
-        // If the basket just emptied out entirely, there's nothing left to check out
-        let totalCount = 0;
-        for (let id in cart) { totalCount += cart[id]; }
-        if (totalCount === 0) closeCheckoutBale();
-    }
-
-    function openCheckoutBale() {
-        renderCartSummary();
-        buildBarterInventoryList();
-        recalculateBarterMath();
-        document.getElementById("checkoutModal").style.display = "flex";
-    }
-
-    function closeCheckoutBale() { document.getElementById("checkoutModal").style.display = "none"; }
-
-    function buildBarterInventoryList() {
-        const target = document.getElementById("barterListDom");
-        target.innerHTML = "";
-        let empty = true;
-        for (let key in userInventory) {
-            if (userInventory[key] > 0) {
-                empty = false;
-                const meta = medallionMetadata[key] || {name: key.toUpperCase(), value: 0};
-                let optionsHtml = "";
-                for (let i = 0; i <= userInventory[key]; i++) { optionsHtml += `<option value="${i}">${i}</option>`; }
-                target.innerHTML += `
-                    <div class="barter-item-row">
-                        <div class="barter-label-group">
-                            <span class="barter-title">${meta.name}</span>
-                            <span class="barter-meta">Value: ${meta.value} PTS | Available: x${userInventory[key]}</span>
-                        </div>
-                        <select class="barter-select" data-key="${key}" data-value="${meta.value}" onchange="recalculateBarterMath()">
-                            ${optionsHtml}
-                        </select>
-                    </div>`;
-            }
-        }
-        if (empty) target.innerHTML = '<div style="padding:15px; text-align:center; color:#718096;">No tradeable assets available.</div>';
-    }
-
-    function recalculateBarterMath() {
-        let totalCost = 0;
-        for (let itemId in cart) {
-            if (cart[itemId] > 0) { 
-                const item = itemCatalog.find(i => i.id === itemId);
-                if(item) { totalCost += (item.cost * cart[itemId]); }
-            }
-        }
-        let totalBarter = 0;
-        document.querySelectorAll(".barter-select").forEach(sel => {
-            totalBarter += (parseInt(sel.value) * parseInt(sel.getAttribute("data-value")));
-        });
-
-        document.getElementById("labelSummaryCost").innerText = totalCost + " PTS";
-        document.getElementById("labelSummaryBarter").innerText = totalBarter + " PTS";
-
-        // Wasted value = excess barter value handed over beyond what the cart actually costs.
-        // Only meaningful once coverage is sufficient; otherwise there's nothing "wasted" yet.
-        const wastedAmount = totalBarter > totalCost ? (totalBarter - totalCost) : 0;
-        document.getElementById("labelSummaryWasted").innerText = wastedAmount + " PTS";
-
-        const err = document.getElementById("checkoutErrLog");
-        const btn = document.getElementById("finalTradeBtn");
-        
-        if (totalCost > 0 && totalBarter >= totalCost) { err.innerText = ""; btn.disabled = false; }
-        else if (totalCost === 0) { err.innerText = ""; btn.disabled = true; }
-        else { err.innerText = "Insufficient barter coverage. Add more medallions."; btn.disabled = true; }
-    }
-
-    function executeFinalTransaction() {
-        const tradeBtn = document.getElementById("finalTradeBtn");
-        tradeBtn.disabled = true;
-        tradeBtn.innerText = "Saving to Google Sheets...";
-
-        let itemsSpentMap = {};
-        document.querySelectorAll(".barter-select").forEach(sel => {
-            let q = parseInt(sel.value) || 0;
-            if (q > 0) itemsSpentMap[sel.getAttribute("data-key")] = q;
-        });
-
-        let finalBasketItems = {};
-        for (let key in cart) {
-            if (cart[key] > 0) {
-                finalBasketItems[key] = cart[key];
-                let cleanedKey = String(key).replace(/\s+/g, '');
-                finalBasketItems[cleanedKey] = cart[key];
-            }
-        }
-
-        const payload = { basket: finalBasketItems, barter_spent: itemsSpentMap };
-        const dispatchUrl = endpoint + "?action=executeStoreTrade&passcode=" + encodeURIComponent("__PASSCODE_RAW__") + "&payload=" + encodeURIComponent(JSON.stringify(payload));
-        
+    function commitClaimToSheets() {
+        if (!selectedItem) return;
+        const claimBtn = document.getElementById('claimBtn'); claimBtn.disabled = true; claimBtn.innerText = "Saving...";
+        const pingUrl = endpoint + "?action=mineMedallion&passcode=" + encodeURIComponent("__PASSCODE_RAW__") + "&item=" + encodeURIComponent(selectedItem);
         const imgPing = new Image();
         imgPing.onload = imgPing.onerror = function() {
             setTimeout(() => {
                 const parentDoc = window.parent.document;
-                const refreshActuator = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText.includes('Refresh Cache Data 🔄'));
-                if (refreshActuator) {
-                    refreshActuator.click();
-                } else {
-                    window.parent.location.reload();
-                }
-            }, 600);
+                const refreshActuator = Array.from(parentDoc.querySelectorAll('button')).find(el => el.innerText.includes('Update Data 🔄'));
+                if (refreshActuator) refreshActuator.click();
+                else window.location.reload();
+            }, 500);
         };
-        imgPing.src = dispatchUrl;
+        imgPing.src = pingUrl;
     }
-
-    // 📌 Mount a screen-locked checkout bar in the real browser window.
-    // position:fixed inside this component only pins to the iframe's own box,
-    // not the actual visible viewport, so a tall page scrolls the bar away with it.
-    // This creates the bar in the parent document instead, where fixed positioning
-    // behaves the way you'd expect.
-    (function relocateCheckoutBar() {
-        try {
-            const parentDoc = window.parent.document;
-
-            if (!parentDoc.getElementById("timberFixedStyles")) {
-                const styleTag = parentDoc.createElement("style");
-                styleTag.id = "timberFixedStyles";
-                styleTag.innerHTML = `
-                    #timberCheckoutBar {
-                        position: fixed; bottom: 0; left: 0; width: 100%;
-                        background: rgba(22,25,37,0.96); backdrop-filter: blur(10px);
-                        border-top: 1px solid #23273A; padding: 14px 20px; box-sizing: border-box;
-                        display: flex; justify-content: center; align-items: center; z-index: 999999;
-                        box-shadow: 0 -10px 35px rgba(0,0,0,0.6); font-family: 'Inter', sans-serif;
-                        transform: translateY(120%); transition: transform 0.28s cubic-bezier(0.16,1,0.3,1);
-                    }
-                    #timberCheckoutBar.visible { transform: translateY(0); }
-                    #timberCheckoutBar button {
-                        width: 460px; max-width: 90vw; height: 46px;
-                        background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: none;
-                        border-radius: 6px; color: #FFF; font-size: 13px; font-weight: 700;
-                        text-transform: uppercase; cursor: pointer; display: flex; justify-content: center;
-                        align-items: center; gap: 12px;
-                    }
-                    #timberCheckoutBar button:disabled { opacity: 0.35; cursor: not-allowed; }
-                    #timberCheckoutBar .basket-tally-pill {
-                        background: rgba(255,255,255,0.18); padding: 3px 9px; border-radius: 4px;
-                        font-size: 11px; font-weight: 800; color: #FFF;
-                    }
-                `;
-                parentDoc.head.appendChild(styleTag);
-            }
-
-            let bar = parentDoc.getElementById("timberCheckoutBar");
-            if (!bar) {
-                bar = parentDoc.createElement("div");
-                bar.id = "timberCheckoutBar";
-                parentDoc.body.appendChild(bar);
-            }
-            bar.innerHTML = `
-                <button id="parentCheckoutBtn" disabled>
-                    <span>Open Verification Checkout</span>
-                    <span class="basket-tally-pill" id="parentTallyPill">0 PTS</span>
-                </button>`;
-            bar.querySelector("#parentCheckoutBtn").addEventListener("click", openCheckoutBale);
-
-            window.__timberBar = bar;
-            window.__timberBtn = bar.querySelector("#parentCheckoutBtn");
-            window.__timberPill = bar.querySelector("#parentTallyPill");
-
-            // Original in-component bar is now redundant since the parent-window bar took over
-            const fallbackAnchor = document.getElementById("fallbackCheckoutAnchor");
-            if (fallbackAnchor) fallbackAnchor.style.display = "none";
-        } catch (e) {
-            // Cross-origin restriction or other failure: original in-component fixed bar
-            // (#fallbackCheckoutAnchor) stays visible and still works within the iframe.
-        }
-    })();
 </script>
 """
 
-CARD_TEMPLATE = """
-<div class="store-card">
-    <div style="width: 100%;">
-        <div class="item-image-frame">
-            <img src="__IMG_BASE64__" />
-        </div>
-        <div class="item-title">__TITLE__</div>
-        <div class="item-desc">__DESC__</div>
-    </div>
-    <div style="width: 100%; display: flex; flex-direction: column; align-items: center;">
-        <div class="item-cost-badge">__COST__ PTS</div>
-        <div class="qty-container">
-            <button class="qty-btn" onclick="updateItemQuantity('__ID__', -1)">-</button>
-            <div class="qty-display" id="qty_val___ID__">0</div>
-            <button class="qty-btn" onclick="updateItemQuantity('__ID__', 1)">+</button>
-        </div>
-    </div>
-</div>
-"""
-
-grid_items_html = ""
-for item in STORE_ITEMS:
-    raw_desc = item['desc']
-    desc_html = raw_desc.replace("**", "<strong>", 1).replace("**", "</strong>", 1) if "**" in raw_desc else raw_desc
+grid_elements_html = ""
+for wood_name in MEDALLION_COLUMNS:
+    display_label = LABEL_MAPPING.get(wood_name, wood_name[:4].upper())
+    lookup_key = wood_name.strip().lower()
+    owned = int(live_inventory.get(lookup_key, 0))
+    sheet_row = live_data.get(lookup_key, None)
+    rarity_class = ""
     
-    card_piece = CARD_TEMPLATE.replace("__IMG_BASE64__", item['img_base64'])
-    card_piece = card_piece.replace("__TITLE__", item['title'])
-    card_piece = card_piece.replace("__DESC__", desc_html)
-    card_piece = card_piece.replace("__COST__", str(item['cost']))
-    card_piece = card_piece.replace("__ID__", str(item['id']))
+    if sheet_row:
+        rarity = sheet_row.get("Rarity", "N/A")
+        value = sheet_row.get("Value", "N/A")
+        availability = sheet_row.get("Availability", "N/A")
+        raw_probability = sheet_row.get("Probability", "N/A")
+        clean_rarity = str(rarity).strip().lower()
+        if "common" in clean_rarity and "uncommon" not in clean_rarity: rarity_class = "rarity-common"
+        elif "uncommon" in clean_rarity: rarity_class = "rarity-uncommon"
+        elif "rare" in clean_rarity: rarity_class = "rarity-rare"
+        elif "epic" in clean_rarity: rarity_class = "rarity-epic"
+        elif "legendary" in clean_rarity: rarity_class = "rarity-legendary"
+        
+        # Display medallion value as plain points, not currency
+        if value != "N/A":
+            value = f"{str(value).strip()} PTS"
+        prob_str = str(raw_probability).replace("%", "").strip()
+        try:
+            prob_val = float(prob_str)
+            if 0 < prob_val < 1.0: prob_val = prob_val * 100
+            probability = f"{prob_val:g}%"
+        except: probability = f"{prob_str}%" if prob_str else "N/A"
+    else: rarity = value = availability = probability = "N/A"
+        
+    img_b64 = get_image_base64(f"assets/{wood_name.lower()}.png")
+    is_sold_out = str(availability).strip() == "0"
     
-    grid_items_html += card_piece
+    if owned > 0 and img_b64:
+        frame_content = f"<img src='data:image/png;base64,{img_b64}' />"
+    elif is_sold_out:
+        frame_content = "<div class='lock-node'>❌</div>"
+    else:
+        frame_content = "<div class='lock-node'>🔒</div>"
+        
+    grid_elements_html += f"""
+    <div class="grid-node">
+        <div class="node-tooltip">
+            <div class="tip-line">Name: <span>{wood_name}</span></div>
+            <div class="tip-line">Rarity: <span class="{rarity_class}">{rarity}</span></div>
+            <div class="tip-line">Value: <span>{value}</span></div>
+            <div class="tip-line">Availability: <span>{availability} left</span></div>
+            <div class="tip-line">Probability: <span>{probability}</span></div>
+        </div>
+        <div class="image-frame">
+            {frame_content}
+        </div>
+        <div class="quantity-badge">{"x" + str(owned) if owned > 0 else "&nbsp;"}</div>
+        <div class="label-badge">{display_label}</div>
+    </div>
+    """
 
-html_store_elements = html_store_template.replace("__STORE_ITEMS_PLACEHOLDER__", grid_items_html)
-html_store_elements = html_store_elements.replace("__VALUE_PLACEHOLDER__", summary_value)
-html_store_elements = html_store_elements.replace("__COLLECTED_PLACEHOLDER__", summary_collected)
-html_store_elements = html_store_elements.replace("__CATALOG_JSON__", items_json)
-html_store_elements = html_store_elements.replace("__INVENTORY_JSON__", inventory_json)
-html_store_elements = html_store_elements.replace("__MEDALLIONS_JSON__", medallions_json)
-html_store_elements = html_store_elements.replace("__PASSCODE_RAW__", user_passcode)
-html_store_elements = html_store_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
+html_elements = html_base_template.replace("__GRID_ITEMS_PLACEHOLDER__", grid_elements_html)
+html_elements = html_elements.replace("__VALUE_PLACEHOLDER__", summary_value)
+html_elements = html_elements.replace("__COLLECTED_PLACEHOLDER__", summary_collected)
+html_elements = html_elements.replace("__ASSET_MAP_PLACEHOLDER__", asset_map_js)
+html_elements = html_elements.replace("__USERNAME_UPPER__", username_display)
+html_elements = html_elements.replace("__PASSCODE_RAW__", user_passcode)
+html_elements = html_elements.replace("__API_URL_PLACEHOLDER__", API_URL)
+html_elements = html_elements.replace("__POOL_ITEMS_PLACEHOLDER__", json.dumps(js_pool_items))
+html_elements = html_elements.replace("__POOL_WEIGHTS_PLACEHOLDER__", json.dumps(js_pool_weights))
 
-st.components.v1.html(html_store_elements, height=1100, scrolling=True)
+# Boosted standard baseline height to 920px to comfortably support vertical multi-row breaks on mobile views
+st.components.v1.html(html_elements, height=920, scrolling=True)
